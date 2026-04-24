@@ -1,0 +1,87 @@
+@model EliteAcademy.Application.DTOs.Admin.AdminDashboardDto
+
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+}
+
+<h2 class="mb-4 fw-bold">Admin Dashboard</h2>
+
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-secondary shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.TotalUsers</div>
+                <div class="mt-1">Total Users</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-primary shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.TotalInstructors</div>
+                <div class="mt-1">Instructors</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-info shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.TotalStudents</div>
+                <div class="mt-1">Students</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-dark shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.TotalClasses</div>
+                <div class="mt-1">Total Classes</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-sm-6 col-lg-4">
+        <div class="card text-bg-warning shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.PendingClasses</div>
+                <div class="mt-1">Pending Classes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card text-bg-success shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.ApprovedClasses</div>
+                <div class="mt-1">Approved Classes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card text-bg-danger shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.RejectedClasses</div>
+                <div class="mt-1">Rejected Classes</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.PendingInstructorApplications > 0)
+{
+    <div class="alert alert-warning d-flex align-items-center justify-content-between mt-4" role="alert">
+        <span>
+            <strong>@Model.PendingInstructorApplications</strong>
+            instructor application@(Model.PendingInstructorApplications == 1 ? "" : "s") awaiting review.
+        </span>
+        <a asp-action="InstructorApplications" class="btn btn-sm btn-warning">Review Now</a>
+    </div>
+}
+
+<div class="mt-4 d-flex gap-2">
+    <a asp-action="Classes" class="btn btn-outline-danger">Manage Classes</a>
+    <a asp-controller="Users" asp-action="Index" class="btn btn-outline-secondary">Manage Users</a>
+    <a asp-action="InstructorApplications" class="btn btn-outline-primary">Instructor Applications</a>
+</div>

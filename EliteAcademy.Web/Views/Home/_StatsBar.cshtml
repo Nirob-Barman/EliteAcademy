@@ -1,0 +1,24 @@
+@model EliteAcademy.Application.DTOs.Home.PlatformStatsDto
+
+<section class="stats-bar py-4 mb-5 rounded-3">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-6 col-md-3">
+                <div class="display-6 fw-bold text-warning stat-number">@Model.ActiveStudents</div>
+                <div class="text-light small mt-1">Active Students</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="display-6 fw-bold text-warning stat-number">@Model.ExpertInstructors</div>
+                <div class="text-light small mt-1">Expert Instructors</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="display-6 fw-bold text-warning stat-number">@Model.TotalEnrollments</div>
+                <div class="text-light small mt-1">Enrollments</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="display-6 fw-bold text-warning stat-number">@Model.ApprovedClasses</div>
+                <div class="text-light small mt-1">Live Classes</div>
+            </div>
+        </div>
+    </div>
+</section>

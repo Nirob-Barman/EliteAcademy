@@ -1,0 +1,46 @@
+@model List<EliteAcademy.Application.DTOs.Coupon.CouponDto>
+
+@if (Model != null && Model.Any())
+{
+    <div class="promo-banner mb-4" id="promoBannerWrap">
+        <div class="promo-banner-track" id="promoBannerTrack">
+            @foreach (var coupon in Model)
+            {
+                <div class="promo-banner-slide">
+                    <span class="me-2">&#127881;</span>
+                    Use code&nbsp;<strong>@coupon.Code</strong>&nbsp;for&nbsp;
+                    <strong>@coupon.DiscountPercent.ToString("0")% off</strong>
+                    &nbsp;&mdash;&nbsp;expires @coupon.ExpiresAt.ToString("dd MMM yyyy")
+                    @if (Model.Count > 1)
+                    {
+                        <a asp-controller="Offer" asp-action="Index"
+                           class="promo-banner-link ms-3">View All Offers &rarr;</a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (Model.Count > 1)
+    {
+        <script>
+            (function () {
+                var slides = document.querySelectorAll('#promoBannerTrack .promo-banner-slide');
+                if (slides.length < 2) return;
+                var current = 0;
+                slides[0].classList.add('active');
+                setInterval(function () {
+                    slides[current].classList.remove('active');
+                    current = (current + 1) % slides.length;
+                    slides[current].classList.add('active');
+                }, 4000);
+            })();
+        </script>
+    }
+    else
+    {
+        <script>
+            document.querySelector('#promoBannerTrack .promo-banner-slide')?.classList.add('active');
+        </script>
+    }
+}

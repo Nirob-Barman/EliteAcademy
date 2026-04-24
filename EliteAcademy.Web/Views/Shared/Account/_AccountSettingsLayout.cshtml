@@ -1,0 +1,160 @@
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    string NavClass(string action) => currentAction == action
+        ? "settings-nav-item settings-nav-item--active"
+        : "settings-nav-item";
+
+    var displayName = User.Identity!.Name ?? "User";
+    var initial     = displayName.FirstOrDefault().ToString().ToUpper();
+
+    var roleBadgeClass = User.IsInRole("Admin")      ? "bg-danger"
+                       : User.IsInRole("Instructor") ? "bg-warning text-dark"
+                       : "bg-primary";
+
+    var roleLabel = User.IsInRole("Admin")      ? "Admin"
+                  : User.IsInRole("Instructor") ? "Instructor"
+                  : "Student";
+
+    var dashboardUrl = User.IsInRole("Admin")      ? "/Admin/Dashboard"
+                     : User.IsInRole("Instructor") ? "/Instructor/Dashboard"
+                     : "/Student/Dashboard";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Account | Elite Academy</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { background: #f4f6fb; }
+        .settings-topbar { background: #fff; border-bottom: 1px solid #e5e7eb; }
+        .settings-brand { font-weight: 700; letter-spacing: .02em; color: #212529; }
+        .settings-brand span { color: #6c757d; font-weight: 400; }
+
+        /* Settings sidebar nav — GitHub/Stripe style */
+        .settings-nav-item {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .75rem 1.25rem;
+            font-size: .875rem;
+            color: #4b5563;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            background: transparent;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+        .settings-nav-item:hover {
+            background: #f3f4f6;
+            color: #111827;
+            border-left-color: #d1d5db;
+        }
+        .settings-nav-item--active {
+            color: #111827;
+            font-weight: 600;
+            background: #f0f2ff;
+            border-left-color: #212529;
+        }
+        .settings-nav-item--active:hover {
+            background: #e8eafd;
+            color: #111827;
+        }
+    </style>
+</head>
+<body>
+
+    @* ── Top navbar ──────────────────────────────────────────────────────── *@
+    <nav class="settings-topbar shadow-sm py-2 px-3 px-lg-4 d-flex align-items-center justify-content-between">
+
+        @* Left: back link + brand *@
+        <div class="d-flex align-items-center gap-3">
+            <a href="@dashboardUrl"
+               class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 py-1 px-2"
+               title="Back to dashboard">
+                <i class="fas fa-arrow-left fa-sm"></i>
+                <span class="d-none d-sm-inline small">Dashboard</span>
+            </a>
+            <span class="settings-brand">Elite<span>Academy</span></span>
+        </div>
+
+        @* Right: avatar + name + role badge + logout *@
+        <div class="d-flex align-items-center gap-2 gap-md-3">
+            <div class="rounded-circle bg-dark text-warning d-inline-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                 style="width:34px;height:34px;font-size:.85rem;">
+                @initial
+            </div>
+            <div class="d-none d-sm-block lh-sm">
+                <div class="fw-semibold small text-truncate" style="max-width:140px;">@displayName</div>
+                <span class="badge @roleBadgeClass" style="font-size:.65rem;">@roleLabel</span>
+            </div>
+            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1">
+                    <i class="fas fa-sign-out-alt fa-sm"></i>
+                    <span class="d-none d-sm-inline small">Logout</span>
+                </button>
+            </form>
+        </div>
+
+    </nav>
+
+    @* ── Page body ───────────────────────────────────────────────────────── *@
+    <div class="container py-4 py-lg-5" style="max-width:1040px;">
+        <div class="row g-4 align-items-start">
+
+            @* ── Left sidebar ──────────────────────────────────────────── *@
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm overflow-hidden">
+
+                    @* Avatar strip *@
+                    <div class="bg-dark text-white text-center py-4 px-3">
+                        <div class="rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center fw-bold fs-3 mb-2 shadow"
+                             style="width:64px;height:64px;">
+                            @initial
+                        </div>
+                        <div class="fw-semibold text-truncate">@displayName</div>
+                        <span class="badge @roleBadgeClass mt-1 px-2">@roleLabel</span>
+                    </div>
+
+                    @* Nav *@
+                    <div class="py-1 border-top">
+                        <a asp-controller="Account" asp-action="Profile"
+                           class="@NavClass("Profile")">
+                            <i class="fas fa-user-edit fa-sm"></i> Edit Profile
+                        </a>
+                        <a asp-controller="Account" asp-action="ChangePassword"
+                           class="@NavClass("ChangePassword")">
+                            <i class="fas fa-lock fa-sm"></i> Change Password
+                        </a>
+                        <a asp-controller="Account" asp-action="NotificationPreferences"
+                           class="@NavClass("NotificationPreferences")">
+                            <i class="fas fa-bell fa-sm"></i> Notifications
+                        </a>
+                        <a asp-controller="Account" asp-action="LoginHistory"
+                           class="@NavClass("LoginHistory")">
+                            <i class="fas fa-history fa-sm"></i> Login History
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+            @* ── Right content ─────────────────────────────────────────── *@
+            <div class="col-md-9">
+                @RenderBody()
+            </div>
+
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

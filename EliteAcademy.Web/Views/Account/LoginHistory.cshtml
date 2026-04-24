@@ -1,0 +1,86 @@
+@model List<EliteAcademy.Application.DTOs.Account.LoginHistoryItemDto>
+
+@{
+    ViewData["Title"] = "Login History";
+    Layout = "~/Views/Shared/Account/_AccountSettingsLayout.cshtml";
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-dark text-white fw-semibold d-flex align-items-center gap-2">
+        <i class="fas fa-history"></i> Login History
+    </div>
+    <div class="card-body p-4">
+
+        <p class="text-muted small mb-4">
+            The last 50 login attempts on your account. Review this list for any unfamiliar activity.
+        </p>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-clock fa-2x mb-3 d-block opacity-25"></i>
+                No login history found.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="small fw-semibold text-muted">Date &amp; Time</th>
+                            <th class="small fw-semibold text-muted">IP Address</th>
+                            <th class="small fw-semibold text-muted">Browser / Device</th>
+                            <th class="small fw-semibold text-muted">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="small text-nowrap">
+                                    @item.LoginTime.ToLocalTime().ToString("MMM dd, yyyy  HH:mm")
+                                </td>
+                                <td class="small font-monospace">
+                                    @(item.IPAddress ?? "—")
+                                </td>
+                                <td class="small text-truncate" style="max-width:260px;" title="@item.UserAgent">
+                                    @ParseBrowser(item.UserAgent)
+                                </td>
+                                <td>
+                                    @if (item.IsSuccessful)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle small">
+                                            <i class="fas fa-check fa-xs me-1"></i>Success
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle small"
+                                              title="@item.ErrorMessage">
+                                            <i class="fas fa-times fa-xs me-1"></i>Failed
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+    </div>
+</div>
+
+@functions {
+    static string ParseBrowser(string? ua)
+    {
+        if (string.IsNullOrWhiteSpace(ua)) return "Unknown";
+        if (ua.Contains("Edg/"))    return "Microsoft Edge";
+        if (ua.Contains("Chrome"))  return "Google Chrome";
+        if (ua.Contains("Firefox")) return "Mozilla Firefox";
+        if (ua.Contains("Safari"))  return "Safari";
+        if (ua.Contains("MSIE") || ua.Contains("Trident")) return "Internet Explorer";
+        return ua.Length > 40 ? ua[..40] + "…" : ua;
+    }
+}

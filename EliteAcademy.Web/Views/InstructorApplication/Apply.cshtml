@@ -1,0 +1,61 @@
+@model EliteAcademy.Web.ViewModels.InstructorApplication.InstructorApplicationFormViewModel
+
+@{
+    ViewData["Title"] = "Apply to Become an Instructor";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h2 class="fw-bold mb-1">Apply to Become an Instructor</h2>
+                <p class="text-muted mb-4">
+                    Tell us about yourself and why you'd like to teach on Elite Academy.
+                    Your application will be reviewed by an admin, and you'll be notified by email once a decision is made.
+                </p>
+
+                <form asp-action="Apply" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Expertise" class="form-label fw-semibold"></label>
+                        <input asp-for="Expertise" class="form-control"
+                               placeholder="e.g. Web Development, Data Science, Photography" />
+                        <span asp-validation-for="Expertise" class="text-danger small"></span>
+                        <div class="form-text">Describe your main subject area or skill (up to 300 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Bio" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Bio" class="form-control" rows="5"
+                                  placeholder="Write a short bio — your background, experience, and qualifications..."></textarea>
+                        <span asp-validation-for="Bio" class="text-danger small"></span>
+                        <div class="form-text">Minimum 50 characters.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Motivation" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Motivation" class="form-control" rows="5"
+                                  placeholder="Why do you want to teach? What will students gain from your classes?"></textarea>
+                        <span asp-validation-for="Motivation" class="text-danger small"></span>
+                        <div class="form-text">Minimum 50 characters.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark px-4">Submit Application</button>
+                        <a asp-controller="Student" asp-action="Dashboard" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

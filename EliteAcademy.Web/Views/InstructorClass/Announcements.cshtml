@@ -1,0 +1,93 @@
+@model List<EliteAcademy.Application.DTOs.Instructor.AnnouncementDto>
+
+@{
+    ViewData["Title"] = "Announcements";
+    Layout = "~/Views/Shared/Instructor/_Layout.cshtml";
+    var classId = (int)ViewBag.ClassId;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Announcements</h2>
+        <p class="text-muted mb-0 small">@ViewBag.ClassName</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Back to Classes</a>
+</div>
+
+<!-- Post new announcement -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white fw-semibold border-bottom">Post Announcement</div>
+    <div class="card-body">
+        <form asp-action="PostAnnouncement" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="classId" value="@classId" />
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Title</label>
+                <input type="text" name="title" class="form-control" maxlength="200"
+                       placeholder="e.g. Live session moved to Friday" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Message</label>
+                <textarea name="body" class="form-control" rows="3"
+                          placeholder="Write your announcement here..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Post to All Students</button>
+        </form>
+    </div>
+</div>
+
+<!-- Existing announcements -->
+@if (Model != null && Model.Any())
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-semibold border-bottom">Posted Announcements</div>
+        <div class="list-group list-group-flush">
+            @foreach (var a in Model)
+            {
+                <div class="list-group-item d-flex justify-content-between align-items-start py-3">
+                    <div class="flex-grow-1 me-3">
+                        <div class="fw-semibold">@a.Title</div>
+                        <div class="text-muted small mt-1" style="white-space:pre-wrap">@a.Body</div>
+                        <div class="text-muted small mt-2">@a.CreatedAt.ToString("dd MMM yyyy HH:mm")</div>
+                    </div>
+                    <form asp-action="DeleteAnnouncement" method="post" class="d-inline swal-confirm-form"
+                          data-swal-text="Delete this announcement? All enrolled students will lose access to it.">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="announcementId" value="@a.Id" />
+                        <input type="hidden" name="classId" value="@classId" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-4">
+        <i class="fa-solid fa-bullhorn fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Announcements Yet</h5>
+        <p class="text-muted mb-0">Post an announcement above to notify all enrolled students.</p>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.swal-confirm-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Delete Announcement?',
+                    text: form.dataset.swalText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete'
+                }).then(function (result) {
+                    if (result.isConfirmed) form.submit();
+                });
+            });
+        });
+    </script>
+}

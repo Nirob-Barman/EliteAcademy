@@ -1,0 +1,32 @@
+@model EliteAcademy.Web.ViewModels.Coupon.CouponFormViewModel
+
+@{
+    ViewData["Title"] = "Edit Coupon";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Edit Coupon â€” @Model.Code</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">â† Back</a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="alert alert-danger small"
+                         style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+                    @await Html.PartialAsync("_CouponFormFields", Model)
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-dark">Save Changes</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

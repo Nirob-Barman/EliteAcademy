@@ -1,0 +1,142 @@
+@model EliteAcademy.Web.ViewModels.Account.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Edit Profile";
+    Layout = "~/Views/Shared/Account/_AccountSettingsLayout.cshtml";
+
+    var roleBadgeClass = Model.Role switch {
+        "Admin"      => "bg-danger",
+        "Instructor" => "bg-warning text-dark",
+        _            => "bg-primary"
+    };
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-dark text-white fw-semibold d-flex align-items-center gap-2">
+        <i class="fas fa-user-edit"></i> Edit Profile
+    </div>
+    <div class="card-body p-4">
+
+        @* Avatar preview row *@
+        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+            @if (!string.IsNullOrWhiteSpace(Model.ExistingPhotoUrl))
+            {
+                <img src="@Model.ExistingPhotoUrl" id="avatarPreview"
+                     class="rounded-circle border shadow-sm flex-shrink-0"
+                     style="width:72px;height:72px;object-fit:cover;" />
+            }
+            else
+            {
+                <div id="avatarPreview"
+                     class="rounded-circle bg-dark text-warning d-flex align-items-center justify-content-center fw-bold fs-3 flex-shrink-0 shadow-sm"
+                     style="width:72px;height:72px;">
+                    @(Model.FirstName?.FirstOrDefault())
+                </div>
+            }
+            <div>
+                <div class="fw-semibold">@Model.FirstName @Model.LastName</div>
+                <div class="text-muted small">@Model.Email</div>
+                <span class="badge @roleBadgeClass mt-1">@(Model.Role ?? "Student")</span>
+            </div>
+        </div>
+
+        <form asp-action="Profile" asp-controller="Account" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input asp-for="ExistingPhotoUrl" type="hidden" />
+
+            <div class="row g-3">
+
+                <div class="col-sm-6">
+                    <label asp-for="FirstName" class="form-label fw-medium small">First Name</label>
+                    <input asp-for="FirstName" class="form-control" placeholder="John" />
+                    <span asp-validation-for="FirstName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-sm-6">
+                    <label asp-for="LastName" class="form-label fw-medium small">Last Name</label>
+                    <input asp-for="LastName" class="form-control" placeholder="Doe" />
+                    <span asp-validation-for="LastName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-sm-6">
+                    <label class="form-label fw-medium small">Email</label>
+                    <input value="@Model.Email" class="form-control bg-light" readonly />
+                    <div class="text-muted" style="font-size:.75rem;">Email cannot be changed here.</div>
+                </div>
+
+                <div class="col-sm-6">
+                    <label asp-for="PhoneNumber" class="form-label fw-medium small">Phone Number</label>
+                    <input asp-for="PhoneNumber" class="form-control" placeholder="+1 555 000 0000" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                </div>
+
+                <div class="col-sm-6">
+                    <label asp-for="Gender" class="form-label fw-medium small">Gender</label>
+                    <select asp-for="Gender" class="form-select">
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="col-sm-6">
+                    <label asp-for="DateOfBirth" class="form-label fw-medium small">Date of Birth</label>
+                    <input asp-for="DateOfBirth" type="date" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Address" class="form-label fw-medium small">Address</label>
+                    <textarea asp-for="Address" class="form-control" rows="2" placeholder="123 Main St, City, Country"></textarea>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="PhotoFile" class="form-label fw-medium small">Profile Photo</label>
+                    <input asp-for="PhotoFile" type="file" class="form-control" accept="image/*"
+                           onchange="previewAvatar(this)" />
+                    <div class="text-muted mt-1" style="font-size:.75rem;">Leave blank to keep current photo.</div>
+                </div>
+
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-dark px-4">Save Changes</button>
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const preview = document.getElementById('avatarPreview');
+            if (preview.tagName === 'IMG') {
+                preview.src = e.target.result;
+            } else {
+                const img = document.createElement('img');
+                img.id = 'avatarPreview';
+                img.className = 'rounded-circle border shadow-sm flex-shrink-0';
+                img.style.cssText = 'width:72px;height:72px;object-fit:cover;';
+                img.src = e.target.result;
+                preview.replaceWith(img);
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+@if (TempData["SuccessMessage"] != null)
+{
+    <text>Swal.fire({ icon: 'success', title: 'Saved', text: '@TempData["SuccessMessage"]', position: 'top-end', timer: 4000, toast: true, timerProgressBar: true, showConfirmButton: false });</text>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <text>Swal.fire({ icon: 'error', title: 'Error', text: '@TempData["ErrorMessage"]', position: 'top-end', timer: 5000, toast: true, timerProgressBar: true, showConfirmButton: false });</text>
+}
+</script>
+@{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

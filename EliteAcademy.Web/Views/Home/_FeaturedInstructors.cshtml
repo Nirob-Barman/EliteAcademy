@@ -1,0 +1,52 @@
+@model List<EliteAcademy.Application.DTOs.Instructor.InstructorProfileDto>
+
+@if (Model != null && Model.Any())
+{
+    <section class="mb-5">
+        <h2 class="fw-bold text-center mb-4">Meet Our Instructors</h2>
+        <div class="row g-4 justify-content-center">
+            @foreach (var instructor in Model)
+            {
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 shadow-sm h-100 instructor-card">
+                        @if (!string.IsNullOrWhiteSpace(instructor.ImageUrl))
+                        {
+                            <img src="@instructor.ImageUrl"
+                                 class="rounded-circle mx-auto mt-4 instructor-avatar"
+                                 alt="@instructor.FirstName @instructor.LastName" />
+                        }
+                        else
+                        {
+                            <div class="rounded-circle mx-auto mt-4 instructor-avatar-placeholder d-flex align-items-center justify-content-center text-white fw-bold fs-3">
+                                @(instructor.FirstName?.FirstOrDefault())
+                            </div>
+                        }
+                        <div class="card-body pb-4">
+                            <h6 class="fw-bold mb-1">@instructor.FirstName @instructor.LastName</h6>
+                            <p class="text-muted small mb-2">Instructor</p>
+                            <div class="d-flex justify-content-center gap-3">
+                                @if (instructor.ClassCount > 0)
+                                {
+                                    <span class="badge bg-dark-subtle text-dark small">
+                                        &#9971; @instructor.ClassCount @(instructor.ClassCount == 1 ? "class" : "classes")
+                                    </span>
+                                }
+                                @if (instructor.StudentCount > 0)
+                                {
+                                    <span class="badge bg-primary-subtle text-primary small">
+                                        &#128100; @instructor.StudentCount @(instructor.StudentCount == 1 ? "student" : "students")
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="text-center mt-4">
+            <a asp-controller="Instructors" asp-action="Index" class="btn btn-outline-dark">
+                View All Instructors &rarr;
+            </a>
+        </div>
+    </section>
+}

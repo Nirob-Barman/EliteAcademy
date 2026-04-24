@@ -1,0 +1,103 @@
+@model List<EliteAcademy.Application.DTOs.QA.QaQuestionDto>
+
+@{
+    ViewData["Title"] = "Class Q&A";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+    var classId = ViewBag.ClassId as int? ?? 0;
+    var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+}
+
+<div class="container mt-5 mb-5">
+    <h2 class="fw-bold mb-1">Class Q&amp;A</h2>
+    <p class="text-muted mb-4">@ViewBag.ClassName</p>
+
+    <!-- Ask a question -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold bg-white">Ask a Question</div>
+        <div class="card-body">
+            <form asp-action="AskQuestion" method="post" class="d-flex gap-2">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="classId" value="@classId" />
+                <input type="text" name="questionText" class="form-control"
+                       placeholder="Type your question…" required maxlength="2000" />
+                <button type="submit" class="btn btn-primary text-nowrap">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        foreach (var q in Model)
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-semibold mb-1">@q.QuestionText</div>
+                            <div class="text-muted small">
+                                @q.StudentName &mdash; @q.AskedAt.ToString("MMM dd, yyyy")
+                            </div>
+                        </div>
+                        @if (q.StudentId == currentUserId)
+                        {
+                            <form asp-action="DeleteQuestion" method="post" class="ms-2 swal-confirm-form"
+                                  data-swal-text="Delete your question and all its answers?">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="questionId" value="@q.Id" />
+                                <input type="hidden" name="classId" value="@classId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">&#10005;</button>
+                            </form>
+                        }
+                    </div>
+
+                    @if (q.Answers.Any())
+                    {
+                        <div class="mt-3 ps-3 border-start border-2 border-success">
+                            @foreach (var a in q.Answers)
+                            {
+                                <div class="mb-2">
+                                    <span class="badge bg-success me-1">Instructor</span>
+                                    @a.AnswerText
+                                    <div class="text-muted small">@a.AnsweredAt.ToString("MMM dd, yyyy")</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted small mt-2 fst-italic">No answer yet.</div>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fa-regular fa-comments fa-3x text-muted mb-3"></i>
+            <h5 class="fw-semibold">No Questions Yet</h5>
+            <p class="text-muted mb-0">Be the first to ask — use the form above.</p>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.swal-confirm-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: form.dataset.swalText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete'
+                }).then(function (result) {
+                    if (result.isConfirmed) form.submit();
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,101 @@
+@model List<EliteAcademy.Application.DTOs.Admin.AdminUserDto>
+
+@{
+    ViewData["Title"] = "User Management";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+}
+
+<h2 class="mb-4 fw-bold">User Management</h2>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Current Role</th>
+                        <th>Change Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{int i = 1;}
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@(i++)</td>
+                            <td class="fw-semibold">@user.FullName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @{
+                                    var roleBadge = user.Role switch
+                                    {
+                                        "Admin"      => "bg-danger",
+                                        "Instructor" => "bg-primary",
+                                        "Student"    => "bg-info text-dark",
+                                        _            => "bg-secondary"
+                                    };
+                                }
+                                <span class="badge @roleBadge">@user.Role</span>
+                            </td>
+                            <td>
+                                @if (user.Role != "Admin")
+                                {
+                                    <form asp-action="ChangeRole" method="post" class="d-flex gap-2 align-items-center">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <select name="newRole" class="form-select form-select-sm" style="width:auto;">
+                                            <option value="Instructor" selected="@(user.Role == "Instructor")">Instructor</option>
+                                            <option value="Student" selected="@(user.Role == "Student")">Student</option>
+                                        </select>
+                                        <button type="button" class="btn btn-sm btn-outline-danger change-role-btn"
+                                                data-name="@user.FullName">
+                                            Change
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Protected</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fa-solid fa-users fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Users Found</h5>
+        <p class="text-muted mb-0">Registered users will appear here once accounts are created.</p>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.change-role-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var name = btn.dataset.name;
+                var form = btn.closest('form');
+                Swal.fire({
+                    title: 'Change Role?',
+                    text: 'Change role for ' + name + '?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#212529',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, change it'
+                }).then(function (result) {
+                    if (result.isConfirmed) form.submit();
+                });
+            });
+        });
+    </script>
+}

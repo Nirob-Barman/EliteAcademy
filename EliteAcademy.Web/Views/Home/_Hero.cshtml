@@ -1,0 +1,11 @@
+<section class="py-5 text-center bg-dark text-white rounded-3 mb-5">
+    <div class="py-3">
+        <h1 class="display-5 fw-bold">&#9971; Elite Academy</h1>
+        <p class="lead mb-4">Unlock your potential with world-class training.</p>
+        <a asp-controller="Classes" asp-action="Index" class="btn btn-warning btn-lg me-2">Browse Classes</a>
+        @if (!User.Identity!.IsAuthenticated)
+        {
+            <a asp-controller="Account" asp-action="Register" class="btn btn-outline-light btn-lg">Get Started</a>
+        }
+    </div>
+</section>

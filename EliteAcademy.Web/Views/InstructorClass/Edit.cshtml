@@ -1,0 +1,63 @@
+@model EliteAcademy.Web.ViewModels.Instructor.ClassEditFormViewModel
+
+@{
+    ViewData["Title"] = "Edit Class";
+    Layout = "~/Views/Shared/Instructor/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white fw-semibold">Edit Class</div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="Id" type="hidden" />
+                    <input asp-for="ExistingImage" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="ClassName" class="form-label fw-semibold">Class Name</label>
+                        <input asp-for="ClassName" class="form-control" />
+                        <span asp-validation-for="ClassName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Class Image</label>
+                        @if (!string.IsNullOrWhiteSpace(Model.ExistingImage))
+                        {
+                            <div class="mb-2">
+                                <img src="@Model.ExistingImage" alt="Current"
+                                     style="height:110px;object-fit:cover;" class="rounded border" />
+                                <div class="text-muted small mt-1">Upload a new image to replace.</div>
+                            </div>
+                        }
+                        <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="AvailableSeats" class="form-label fw-semibold">Available Seats</label>
+                            <input asp-for="AvailableSeats" class="form-control" type="number" min="1" />
+                            <span asp-validation-for="AvailableSeats" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Price" class="form-label fw-semibold">Price ($)</label>
+                            <input asp-for="Price" class="form-control" type="number" step="0.01" min="0.01" />
+                            <span asp-validation-for="Price" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

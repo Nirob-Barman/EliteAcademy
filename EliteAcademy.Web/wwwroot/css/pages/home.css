@@ -1,0 +1,81 @@
+/* Promo Banner */
+.promo-banner {
+    background: linear-gradient(90deg, #212529 0%, #343a40 100%);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.promo-banner-track {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    padding: 0.65rem 1rem;
+}
+.promo-banner-slide {
+    display: none;
+    color: #fff;
+    font-size: 0.95rem;
+    animation: promofade 0.5s ease;
+}
+.promo-banner-slide.active {
+    display: block;
+}
+.promo-banner-link {
+    color: #ffc107;
+    text-decoration: none;
+    font-weight: 600;
+}
+.promo-banner-link:hover {
+    color: #ffda6a;
+}
+@keyframes promofade {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Stats Bar */
+.stats-bar {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+/* Home Class Cards */
+.home-class-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.home-class-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+}
+
+/* Instructor Cards */
+.instructor-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.instructor-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+}
+.instructor-avatar {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+}
+.instructor-avatar-placeholder {
+    width: 90px;
+    height: 90px;
+    background-color: #6c757d;
+}
+
+/* Testimonial Cards */
+.testimonial-card {
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease;
+}
+.testimonial-card:hover {
+    transform: translateY(-3px);
+}

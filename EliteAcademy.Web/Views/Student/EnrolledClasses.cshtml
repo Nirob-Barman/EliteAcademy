@@ -1,0 +1,110 @@
+@model EliteAcademy.Web.ViewModels.Student.EnrolledClassesViewModel
+
+@{
+    ViewData["Title"] = "My Classes";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">My Classes</h4>
+        @if (Model.Enrollments.Any())
+        {
+            <span class="text-muted small">@Model.Enrollments.Count class@(Model.Enrollments.Count == 1 ? "" : "es") enrolled</span>
+        }
+    </div>
+    <a asp-controller="Classes" asp-action="Index"
+       class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+        <i class="fas fa-arrow-left fa-xs"></i> Browse Classes
+    </a>
+</div>
+
+@if (Model.Enrollments.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="border-bottom" style="background:#f8f9fa;">
+                        <th class="ps-4 py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Class</th>
+                        <th class="py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Instructor</th>
+                        <th class="py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Price</th>
+                        <th class="py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Enrolled On</th>
+                        <th class="pe-4 py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Enrollments)
+                    {
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrWhiteSpace(item.ClassImage))
+                                    {
+                                        <img src="@item.ClassImage" alt="@item.ClassName"
+                                             class="rounded flex-shrink-0"
+                                             style="width:64px;height:48px;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width:64px;height:48px;">
+                                            <i class="fas fa-chalkboard-teacher text-muted fa-sm"></i>
+                                        </div>
+                                    }
+                                    <span class="fw-semibold small">@item.ClassName</span>
+                                </div>
+                            </td>
+                            <td class="text-muted small">@item.InstructorName</td>
+                            <td class="small fw-medium">$@item.Price.ToString("0.00")</td>
+                            <td class="text-muted small">@item.EnrolledAt.ToString("MMM dd, yyyy")</td>
+                            <td class="pe-4">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <a asp-action="ClassQa" asp-route-classId="@item.ClassId"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Q&amp;A">
+                                        <i class="fas fa-comments fa-xs me-1"></i>Q&amp;A
+                                    </a>
+                                    <a asp-action="ClassAnnouncements" asp-route-classId="@item.ClassId"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Announcements">
+                                        <i class="fas fa-bullhorn fa-xs me-1"></i>News
+                                    </a>
+                                    @if (Model.ReviewedClassIds.Contains(item.ClassId))
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"
+                                              style="font-size:.75rem;padding:.35em .6em;">
+                                            <i class="fas fa-check fa-xs me-1"></i>Reviewed
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="LeaveReview" asp-route-classId="@item.ClassId"
+                                           class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-star fa-xs me-1"></i>Review
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5 my-4">
+        <div class="mb-3" style="font-size:3rem;color:#ced4da;">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h5 class="fw-semibold mb-2">No classes yet</h5>
+        <p class="text-muted small mb-4">
+            You haven't enrolled in any classes. Browse our catalog to get started.
+        </p>
+        <a asp-controller="Classes" asp-action="Index" class="btn btn-dark px-4">
+            Browse Classes
+        </a>
+    </div>
+}

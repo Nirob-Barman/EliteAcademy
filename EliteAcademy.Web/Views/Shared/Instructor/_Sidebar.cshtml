@@ -1,0 +1,40 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    string NavClass(string controller, string action)
+        => currentController == controller && currentAction == action
+            ? "nav-link px-3 py-2 rounded bg-warning text-dark fw-semibold"
+            : "nav-link text-light px-3 py-2 rounded";
+}
+
+<div class="h-100 d-flex flex-column p-3 p-lg-4 text-light">
+    <a class="text-decoration-none text-white d-block mb-4" asp-controller="Home" asp-action="Index">
+        <div class="fw-bold fs-5">
+            &#9971; Elite Academy
+            <span class="badge bg-warning text-dark ms-1">Instructor</span>
+        </div>
+        <div class="small text-light-emphasis mt-1">Teaching workspace</div>
+    </a>
+
+    <nav class="nav flex-column gap-2">
+        <a class="@NavClass("Instructor", "Dashboard")" asp-controller="Instructor" asp-action="Dashboard">Dashboard</a>
+        <a class="@NavClass("InstructorClass", "Index")" asp-controller="InstructorClass" asp-action="Index">My Classes</a>
+        <a class="@NavClass("InstructorClass", "Create")" asp-controller="InstructorClass" asp-action="Create">New Class</a>
+        <a class="@NavClass("Classes", "Index")" asp-controller="Classes" asp-action="Index">Course Catalog</a>
+    </nav>
+
+    <div class="mt-auto pt-4 border-top border-secondary-subtle">
+        <div class="small text-light-emphasis">Signed in as</div>
+        <div class="fw-semibold text-truncate mb-2">@User.Identity!.Name</div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Account" asp-action="Profile"
+               class="btn btn-sm btn-outline-light flex-fill text-center" style="font-size:.8rem;">
+                Profile
+            </a>
+            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0 flex-fill">
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100" style="font-size:.8rem;">Logout</button>
+            </form>
+        </div>
+    </div>
+</div>

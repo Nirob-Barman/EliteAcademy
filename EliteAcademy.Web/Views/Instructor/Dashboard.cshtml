@@ -1,0 +1,120 @@
+@model EliteAcademy.Application.DTOs.Instructor.InstructorDashboardDto
+
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/Instructor/_Layout.cshtml";
+}
+
+<h2 class="mb-4 fw-bold">Instructor Dashboard</h2>
+
+<!-- Stat Cards Row 1: Classes -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-primary shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.TotalClasses</div>
+                <div class="mt-1">Total Classes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-warning shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.PendingClasses</div>
+                <div class="mt-1">Pending Approval</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-success shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.ApprovedClasses</div>
+                <div class="mt-1">Approved</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-danger shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.RejectedClasses</div>
+                <div class="mt-1">Rejected</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue / Students Row -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6">
+        <div class="card shadow-sm h-100 border-0 bg-dark text-white">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold text-warning">$@Model.TotalRevenue.ToString("N2")</div>
+                <div class="mt-1">Total Revenue</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="card shadow-sm h-100 border-0" style="background:#0d6efd1a;">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold text-primary">@Model.TotalStudents</div>
+                <div class="mt-1 text-muted">Total Students Enrolled</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Revenue Chart -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-semibold bg-white">Monthly Revenue (Last 12 Months)</div>
+    <div class="card-body">
+        <canvas id="revenueChart" height="90"></canvas>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <a asp-action="MyClasses" class="btn btn-outline-primary">View My Classes</a>
+    <a asp-action="AddClass"  class="btn btn-primary">+ Add New Class</a>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const labels  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyRevenue.Select(m => m.Label)));
+        const revenue = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyRevenue.Select(m => m.Revenue)));
+        const enrolls = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyRevenue.Select(m => m.Enrollments)));
+
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Revenue ($)',
+                        data: revenue,
+                        backgroundColor: 'rgba(13,110,253,0.7)',
+                        borderRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Enrollments',
+                        data: enrolls,
+                        type: 'line',
+                        borderColor: '#ffc107',
+                        backgroundColor: 'transparent',
+                        pointBackgroundColor: '#ffc107',
+                        tension: 0.3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y:  { beginAtZero: true, position: 'left',  title: { display: true, text: 'Revenue ($)' } },
+                    y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'Enrollments' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    </script>
+}

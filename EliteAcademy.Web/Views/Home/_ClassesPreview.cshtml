@@ -1,0 +1,77 @@
+@model List<EliteAcademy.Web.ViewModels.Student.ClassIndexItemViewModel>
+
+@if (Model != null && Model.Any())
+{
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="fw-bold mb-0">Available Classes</h2>
+            <a asp-controller="Classes" asp-action="Index" class="btn btn-outline-dark btn-sm">
+                View All &rarr;
+            </a>
+        </div>
+        <div class="row g-4">
+            @foreach (var item in Model.Take(6))
+            {
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm home-class-card">
+                        @if (!string.IsNullOrWhiteSpace(item.Class.ClassImage))
+                        {
+                            <img src="@item.Class.ClassImage" class="card-img-top" alt="@item.Class.ClassName"
+                                 style="height:180px;object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <div class="bg-secondary d-flex align-items-center justify-content-center"
+                                 style="height:180px;">
+                                <span class="text-white fs-3">&#9971;</span>
+                            </div>
+                        }
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title fw-bold mb-1">@item.Class.ClassName</h5>
+                            <p class="text-muted small mb-1">@item.Class.InstructorName</p>
+
+                            @if (item.ReviewCount > 0)
+                            {
+                                <div class="d-flex align-items-center gap-1 mb-1">
+                                    @{
+                                        var full = (int)Math.Floor(item.AverageRating);
+                                        var half = (item.AverageRating - full) >= 0.5;
+                                    }
+                                    @for (int s = 1; s <= 5; s++)
+                                    {
+                                        if (s <= full)
+                                        { <span class="text-warning small">&#9733;</span> }
+                                        else if (s == full + 1 && half)
+                                        { <span class="text-warning small">&#9734;</span> }
+                                        else
+                                        { <span class="text-muted small">&#9734;</span> }
+                                    }
+                                    <span class="text-muted small ms-1">@item.AverageRating.ToString("0.0") (@item.ReviewCount)</span>
+                                </div>
+                            }
+
+                            <p class="text-muted small mb-2">
+                                <span class="@(item.Class.AvailableSeats == 0 ? "text-danger fw-semibold" : "")">
+                                    @(item.Class.AvailableSeats == 0 ? "No seats available" : $"{item.Class.AvailableSeats} seats left")
+                                </span>
+                            </p>
+                            <p class="fw-bold text-success fs-5 mt-auto mb-0">$@item.Class.Price.ToString("0.00")</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a asp-controller="Classes" asp-action="Index"
+                               class="btn btn-outline-dark btn-sm w-100">Browse &amp; Enroll</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        @if (Model.Count > 6)
+        {
+            <div class="text-center mt-4">
+                <a asp-controller="Classes" asp-action="Index" class="btn btn-dark">
+                    View All @Model.Count Classes &rarr;
+                </a>
+            </div>
+        }
+    </section>
+}

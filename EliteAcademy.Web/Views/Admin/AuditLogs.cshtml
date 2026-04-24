@@ -1,0 +1,145 @@
+@model List<EliteAcademy.Application.DTOs.AuditLog.AuditLogDto>
+
+@{
+    ViewData["Title"] = "Audit Logs";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Audit Logs</h2>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+                <label class="form-label small fw-semibold text-muted">Entity</label>
+                <input type="text" name="entity" class="form-control"
+                       value="@ViewBag.EntityFilter" placeholder="e.g. Coupon, Class, User" />
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label small fw-semibold text-muted">Action</label>
+                <input type="text" name="action" class="form-control"
+                       value="@ViewBag.ActionFilter" placeholder="e.g. Create, Delete, Approve" />
+            </div>
+            <div class="col-6 col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+            <div class="col-6 col-md-2">
+                <a asp-action="Index" class="btn btn-outline-secondary w-100">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Time</th>
+                        <th>Entity</th>
+                        <th>Action</th>
+                        <th>User</th>
+                        <th>Details</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td class="text-muted text-nowrap">@log.CreatedAt.ToString("MMM dd HH:mm")</td>
+                            <td>
+                                <span class="badge bg-secondary">@log.EntityName</span>
+                            </td>
+                            <td>
+                                @{
+                                    var badgeClass = log.Action switch
+                                    {
+                                        "Create" or "Activate" or "Approve" => "bg-success",
+                                        "Delete" or "Reject" or "Deactivate" => "bg-danger",
+                                        "Update" => "bg-warning text-dark",
+                                        _ => "bg-primary"
+                                    };
+                                }
+                                <span class="badge @badgeClass">@log.Action</span>
+                            </td>
+                            <td>@(log.UserName ?? log.UserId ?? "–")</td>
+                            <td>@log.Details</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(log.OldValues) || !string.IsNullOrWhiteSpace(log.NewValues))
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#diffModal-@log.Id">
+                                        Diff
+                                    </button>
+
+                                    <!-- Diff Modal -->
+                                    <div class="modal fade" id="diffModal-@log.Id" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">@log.EntityName — @log.Action</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    @if (!string.IsNullOrWhiteSpace(log.OldValues))
+                                                    {
+                                                        <h6 class="text-danger">Before</h6>
+                                                        <pre class="bg-light p-2 rounded small">@log.OldValues</pre>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace(log.NewValues))
+                                                    {
+                                                        <h6 class="text-success">After</h6>
+                                                        <pre class="bg-light p-2 rounded small">@log.NewValues</pre>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-3 d-flex gap-2 justify-content-center">
+        @{
+            int currentPage = ViewBag.CurrentPage ?? 1;
+        }
+        @if (currentPage > 1)
+        {
+            <a asp-action="Index"
+               asp-route-entity="@ViewBag.EntityFilter"
+               asp-route-action="@ViewBag.ActionFilter"
+               asp-route-page="@(currentPage - 1)"
+               class="btn btn-outline-secondary btn-sm">&#8592; Prev</a>
+        }
+        <span class="btn btn-secondary btn-sm disabled">Page @currentPage</span>
+        @if (Model.Count == 30)
+        {
+            <a asp-action="Index"
+               asp-route-entity="@ViewBag.EntityFilter"
+               asp-route-action="@ViewBag.ActionFilter"
+               asp-route-page="@(currentPage + 1)"
+               class="btn btn-outline-secondary btn-sm">Next &#8594;</a>
+        }
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fa-solid fa-clock-rotate-left fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Audit Log Entries Found</h5>
+        <p class="text-muted mb-0">Logged actions will appear here once activity occurs, or try clearing your filters.</p>
+    </div>
+}

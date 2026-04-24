@@ -1,0 +1,65 @@
+@model List<EliteAcademy.Application.DTOs.Instructor.ClassStudentDto>
+
+@{
+    ViewData["Title"] = "Class Students";
+    Layout = "~/Views/Shared/Instructor/_Layout.cshtml";
+    var classId = ViewBag.ClassId as int? ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Enrolled Students</h2>
+        <div class="text-muted small">@ViewBag.ClassName</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Qa" asp-route-id="@classId" class="btn btn-outline-primary">
+            &#128172; Q&amp;A
+        </a>
+        <a asp-action="ExportStudentsCsv" asp-route-id="@classId"
+           class="btn btn-outline-success">
+            &#8659; Export CSV
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <span class="fw-semibold">@Model.Count student(s) enrolled</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Enrolled At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int i = 1; }
+                    @foreach (var s in Model)
+                    {
+                        <tr>
+                            <td class="text-muted">@(i++)</td>
+                            <td class="fw-semibold">@s.FullName</td>
+                            <td>@s.Email</td>
+                            <td class="text-muted small">@s.EnrolledAt.ToString("MMM dd, yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fa-solid fa-user-graduate fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Students Enrolled Yet</h5>
+        <p class="text-muted mb-0">Students who enroll in this class will appear here.</p>
+    </div>
+}

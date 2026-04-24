@@ -1,0 +1,63 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-warning" asp-controller="Home" asp-action="Index">
+            &#9971; Elite Academy
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#studentNav" aria-controls="studentNav"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="studentNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Student" asp-action="Dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Student" asp-action="Cart">My Cart</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Student" asp-action="EnrolledClasses">My Classes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Classes" asp-action="Index">Browse Classes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Student" asp-action="Wishlist">Wishlist</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="InstructorApplication" asp-action="MyApplication">Become an Instructor</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item me-2">
+                    <a class="nav-link position-relative" asp-controller="Notification" asp-action="Index" title="Notifications">
+                        &#128276;
+                        <span id="notif-badge"
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style="display:none;font-size:0.65rem;"></span>
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        @User.Identity!.Name
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
+                                Profile
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <form asp-controller="Account" asp-action="Logout" method="post">
+                                <button type="submit" class="dropdown-item text-danger">Logout</button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

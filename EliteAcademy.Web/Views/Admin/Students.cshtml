@@ -1,0 +1,121 @@
+@model List<EliteAcademy.Application.DTOs.Admin.AdminStudentDto>
+
+@{
+    ViewData["Title"] = "Student Management";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold mb-0">Student Management</h2>
+    <span class="badge bg-secondary fs-6">@Model.Count students</span>
+</div>
+
+@if (Model.Any())
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="studentsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th class="text-center">Enrollments</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int i = 1; }
+                        @foreach (var student in Model)
+                        {
+                            <tr class="@(student.IsBanned ? "table-danger" : "")">
+                                <td class="text-muted">@(i++)</td>
+                                <td class="fw-semibold">@student.FullName</td>
+                                <td>@student.Email</td>
+                                <td class="text-center">
+                                    @if (student.EnrollmentCount > 0)
+                                    {
+                                        <span class="badge bg-info text-dark">@student.EnrollmentCount</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (student.IsBanned)
+                                    {
+                                        <span class="badge bg-danger">Banned</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (student.IsBanned)
+                                    {
+                                        <form asp-action="UnbanStudent" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@student.Id" />
+                                            <button type="button" class="btn btn-sm btn-outline-success swal-confirm-btn"
+                                                    data-swal-text="Unban @student.FullName?"
+                                                    data-swal-confirm="Yes, unban"
+                                                    data-swal-color="#198754">
+                                                Unban
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="BanStudent" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@student.Id" />
+                                            <button type="button" class="btn btn-sm btn-outline-danger swal-confirm-btn"
+                                                    data-swal-text="Ban @student.FullName? They will not be able to log in."
+                                                    data-swal-confirm="Yes, ban"
+                                                    data-swal-color="#dc3545">
+                                                Ban
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fa-solid fa-user-graduate fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Students Registered Yet</h5>
+        <p class="text-muted mb-0">Students who register on the platform will appear here.</p>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.swal-confirm-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var form = btn.closest('form');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: btn.dataset.swalText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: btn.dataset.swalColor || '#212529',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: btn.dataset.swalConfirm || 'Yes, proceed'
+                }).then(function (result) {
+                    if (result.isConfirmed) form.submit();
+                });
+            });
+        });
+    </script>
+}

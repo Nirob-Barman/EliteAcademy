@@ -1,0 +1,74 @@
+@using System.Text.Json
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Instructor | Elite Academy</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="bg-light">
+    <div class="d-flex min-vh-100">
+        <aside class="bg-dark border-end d-none d-lg-block" style="width: 280px;">
+            @await Html.PartialAsync("Instructor/_Sidebar")
+        </aside>
+
+        <div class="flex-grow-1 d-flex flex-column min-vh-100">
+            <header class="bg-white border-bottom shadow-sm">
+                @await Html.PartialAsync("Instructor/_Topbar")
+            </header>
+
+            <main class="flex-grow-1">
+                <div class="container-fluid py-4 px-3 px-lg-4">
+                    @RenderBody()
+                </div>
+            </main>
+
+            @await Html.PartialAsync("Instructor/_Footer")
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-start bg-dark text-light" tabindex="-1" id="instructorSidebarMobile" aria-labelledby="instructorSidebarMobileLabel">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title text-white" id="instructorSidebarMobileLabel">Instructor Menu</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            @await Html.PartialAsync("Instructor/_Sidebar")
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @if (TempData["Success"] != null)
+    {
+        <script>
+            Swal.fire({ icon: 'success', title: 'Success', text: @Html.Raw(JsonSerializer.Serialize(TempData["Success"]?.ToString())), timer: 2500, showConfirmButton: false });
+        </script>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <script>
+            Swal.fire({ icon: 'error', title: 'Error', text: @Html.Raw(JsonSerializer.Serialize(TempData["Error"]?.ToString())) });
+        </script>
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        (function () {
+            fetch('/Notification/GetUnreadCount')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.count > 0) {
+                        var badge = document.getElementById('notif-badge-instructor');
+                        if (badge) { badge.textContent = data.count > 9 ? '9+' : data.count; badge.style.display = ''; }
+                    }
+                }).catch(() => {});
+        })();
+    </script>
+</body>
+</html>

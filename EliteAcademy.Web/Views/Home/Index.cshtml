@@ -1,0 +1,18 @@
+@model EliteAcademy.Web.ViewModels.Home.HomeIndexViewModel
+@{
+    ViewData["Title"] = "Elite Academy";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/home.css" asp-append-version="true" />
+}
+
+@await Html.PartialAsync("_Hero")
+@await Html.PartialAsync("_PromoBanner", Model.ActiveCoupons)
+@await Html.PartialAsync("_StatsBar", Model.Stats)
+@await Html.PartialAsync("_ClassesPreview", Model.Classes)
+@await Html.PartialAsync("_FeaturedInstructors", Model.FeaturedInstructors)
+@await Html.PartialAsync("_WhyUs")
+@await Html.PartialAsync("_Testimonials")
+@await Html.PartialAsync("_Cta")

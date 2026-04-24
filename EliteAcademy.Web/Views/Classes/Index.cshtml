@@ -1,0 +1,226 @@
+@model List<EliteAcademy.Web.ViewModels.Student.ClassIndexItemViewModel>
+
+@{
+    ViewData["Title"] = "Classes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var instructors = Model?
+        .Select(m => m.Class.InstructorName)
+        .Where(n => !string.IsNullOrWhiteSpace(n))
+        .Distinct()
+        .OrderBy(n => n)
+        .ToList() ?? new List<string?>();
+}
+
+<div class="container mt-5 mb-5">
+
+    <h2 class="text-center mb-4 fw-bold">Explore Our Classes</h2>
+
+    @if (Model != null && Model.Any())
+    {
+        <!-- Filter Bar -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Search</label>
+                        <input id="filterSearch" type="text" class="form-control"
+                               placeholder="Search by class name..." />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold text-muted">Instructor</label>
+                        <select id="filterInstructor" class="form-select">
+                            <option value="">All Instructors</option>
+                            @foreach (var name in instructors)
+                            {
+                                <option value="@name?.ToLower()">@name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-muted">Min Price ($)</label>
+                        <input id="filterMinPrice" type="number" class="form-control" min="0" placeholder="0" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-muted">Max Price ($)</label>
+                        <input id="filterMaxPrice" type="number" class="form-control" min="0" placeholder="Any" />
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <button id="clearFilters" class="btn btn-outline-secondary w-100" type="button" title="Clear filters">
+                            &#10005;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Grid -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col class-card-col"
+                     data-name="@item.Class.ClassName"
+                     data-instructor="@item.Class.InstructorName?.ToLower()"
+                     data-price="@item.Class.Price.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)">
+                    <div class="card h-100 shadow-sm @(item.Class.AvailableSeats == 0 ? "border-danger" : "")">
+                        @if (!string.IsNullOrWhiteSpace(item.Class.ClassImage))
+                        {
+                            <img src="@item.Class.ClassImage" class="card-img-top"
+                                 alt="@item.Class.ClassName"
+                                 style="height:200px;object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <div class="bg-secondary d-flex align-items-center justify-content-center"
+                                 style="height:200px;">
+                                <span class="text-white fs-4">&#9971;</span>
+                            </div>
+                        }
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title fw-semibold">@item.Class.ClassName</h5>
+                            <p class="card-text text-muted small mb-1">@item.Class.InstructorName</p>
+                            <p class="card-text text-muted small mb-1">Seats: @item.Class.AvailableSeats</p>
+                            @if (item.ReviewCount > 0)
+                            {
+                                <p class="card-text small mb-1">
+                                    @{
+                                        var fullStars  = (int)Math.Floor(item.AverageRating);
+                                        var halfStar   = (item.AverageRating - fullStars) >= 0.5;
+                                    }
+                                    @for (int s = 1; s <= 5; s++)
+                                    {
+                                        if (s <= fullStars)
+                                        { <span class="text-warning">&#9733;</span> }
+                                        else if (s == fullStars + 1 && halfStar)
+                                        { <span class="text-warning">&#9734;</span> }
+                                        else
+                                        { <span class="text-muted">&#9734;</span> }
+                                    }
+                                    <span class="text-muted ms-1">@item.AverageRating.ToString("0.0") (@item.ReviewCount)</span>
+                                </p>
+                            }
+                            <p class="card-text fw-bold text-success mb-3">
+                                $@item.Class.Price.ToString("0.00")
+                            </p>
+
+                            @if (User.Identity!.IsAuthenticated)
+                            {
+                                if (User.IsInRole("Student"))
+                                {
+                                    if (item.IsEnrolled)
+                                    {
+                                        <button class="btn btn-success w-100 mt-auto" disabled>Enrolled</button>
+                                    }
+                                    else
+                                    {
+                                        <div class="mt-auto d-flex gap-1">
+                                            @if (item.Class.AvailableSeats > 0 && !item.IsSelected)
+                                            {
+                                                <button class="btn btn-primary flex-grow-1 select-btn"
+                                                        data-class-id="@item.Class.Id">Select</button>
+                                            }
+                                            else if (item.IsSelected)
+                                            {
+                                                <button class="btn btn-secondary flex-grow-1" disabled>Selected</button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-danger small fw-bold flex-grow-1 align-self-center">No seats</span>
+                                            }
+                                            <button class="btn @(item.IsWishlisted ? "btn-warning" : "btn-outline-warning") wishlist-btn"
+                                                    data-class-id="@item.Class.Id"
+                                                    title="@(item.IsWishlisted ? "Wishlisted" : "Add to Wishlist")"
+                                                    @(item.IsWishlisted ? "disabled" : "")>&#x2665;</button>
+                                        </div>
+                                    }
+                                }
+                                else if (item.Class.AvailableSeats == 0)
+                                {
+                                    <p class="text-danger fw-bold mt-auto mb-0">No available seats</p>
+                                }
+                            }
+                            else
+                            {
+                                <a asp-controller="Account" asp-action="Login"
+                                   class="btn btn-outline-primary w-100 mt-auto">
+                                    Login to Enroll
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div id="noResultsAlert" class="alert alert-info text-center mt-4" style="display:none;">
+            No classes match your filters. <button id="clearFilters2" class="btn btn-sm btn-outline-secondary ms-2" type="button">Clear Filters</button>
+        </div>
+
+        <div id="pagination" class="mt-4"></div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fa-solid fa-chalkboard-user fa-3x text-muted mb-3"></i>
+            <h5 class="fw-semibold">No Classes Available Yet</h5>
+            <p class="text-muted mb-0">Our instructors are working on new classes. Check back soon!</p>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script src="~/js/pages/class-index.js" asp-append-version="true"></script>
+    <script>
+        $(document).ready(function () {
+            // wire the second clear button inside the no-results alert
+            $('#clearFilters2').on('click', function () { $('#clearFilters').trigger('click'); });
+            $('.wishlist-btn').on('click', function () {
+                var classId = $(this).data('class-id');
+                var token = $('input[name="__RequestVerificationToken"]').val();
+                var btn = $(this);
+                $.ajax({
+                    url: '/Student/AddToWishlist',
+                    type: 'POST',
+                    data: { classId: classId, __RequestVerificationToken: token },
+                    success: function () {
+                        btn.removeClass('btn-outline-warning').addClass('btn-warning').prop('disabled', true).attr('title', 'Wishlisted');
+                        Swal.fire({ icon: 'success', title: 'Wishlisted!', timer: 1500, showConfirmButton: false });
+                    },
+                    error: function (xhr) {
+                        Swal.fire({ icon: 'error', title: 'Failed', text: xhr.responseText || 'Could not add to wishlist.' });
+                    }
+                });
+            });
+
+            $('.select-btn').on('click', function () {
+                var btn = $(this);
+                var classId = btn.data('class-id');
+                var token = $('input[name="__RequestVerificationToken"]').val();
+                $.ajax({
+                    url: '/Student/SelectClass',
+                    type: 'POST',
+                    data: { classId: classId, __RequestVerificationToken: token },
+                    success: function () {
+                        btn.removeClass('btn-primary select-btn')
+                           .addClass('btn-secondary')
+                           .prop('disabled', true)
+                           .text('Selected');
+                        Swal.fire({
+                            icon: 'success', title: 'Added to cart!',
+                            timer: 1800, showConfirmButton: false,
+                            toast: true, position: 'top-end'
+                        });
+                    },
+                    error: function (xhr) {
+                        Swal.fire({
+                            icon: 'error', title: 'Failed',
+                            text: xhr.responseText || 'Could not select class. Please try again.',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

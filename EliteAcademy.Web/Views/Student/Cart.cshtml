@@ -1,0 +1,175 @@
+@model List<EliteAcademy.Application.DTOs.Student.PreEnrollmentDto>
+
+@{
+    ViewData["Title"] = "My Cart";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">My Cart</h4>
+        @if (Model != null && Model.Any())
+        {
+            <span class="text-muted small">@Model.Count class@(Model.Count == 1 ? "" : "es") selected</span>
+        }
+    </div>
+    <a asp-controller="Classes" asp-action="Index" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+        <i class="fas fa-arrow-left fa-xs"></i> Browse Classes
+    </a>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="border-bottom" style="background:#f8f9fa;">
+                        <th class="ps-4 py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Class</th>
+                        <th class="py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Instructor</th>
+                        <th class="py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Price</th>
+                        <th class="py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Coupon</th>
+                        <th class="py-3 small fw-semibold text-muted text-uppercase" style="letter-spacing:.04em;">Total</th>
+                        <th class="pe-4 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrWhiteSpace(item.ClassImage))
+                                    {
+                                        <img src="@item.ClassImage" alt="@item.ClassName"
+                                             class="rounded flex-shrink-0"
+                                             style="width:64px;height:48px;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width:64px;height:48px;">
+                                            <i class="fas fa-chalkboard-teacher text-muted fa-sm"></i>
+                                        </div>
+                                    }
+                                    <span class="fw-semibold small">@item.ClassName</span>
+                                </div>
+                            </td>
+                            <td class="text-muted small">@item.InstructorName</td>
+                            <td>
+                                @if (item.DiscountAmount > 0)
+                                {
+                                    <span class="text-muted small text-decoration-line-through">$@item.Price.ToString("0.00")</span>
+                                }
+                                else
+                                {
+                                    <span class="small fw-medium">$@item.Price.ToString("0.00")</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.DiscountAmount > 0)
+                                {
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle small">
+                                            @item.CouponCode &nbsp;−$@item.DiscountAmount.ToString("0.00")
+                                        </span>
+                                        <form asp-action="RemoveCoupon" method="post" class="m-0">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="preEnrollmentId" value="@item.Id" />
+                                            <button type="submit" class="btn btn-link btn-sm text-muted p-0 lh-1"
+                                                    title="Remove coupon" style="font-size:.8rem;">✕</button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <form asp-action="ApplyCoupon" method="post" class="d-flex gap-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="preEnrollmentId" value="@item.Id" />
+                                        <input type="text" name="couponCode"
+                                               class="form-control form-control-sm"
+                                               placeholder="Add code"
+                                               style="width:100px;font-size:.8rem;" maxlength="50" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" style="font-size:.8rem;">Apply</button>
+                                    </form>
+                                }
+                            </td>
+                            <td class="fw-bold">$@item.FinalPrice.ToString("0.00")</td>
+                            <td class="pe-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <a asp-controller="Payment" asp-action="Checkout" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-dark px-3">
+                                        Pay Now
+                                    </a>
+                                    <form asp-action="DeleteSelected" method="post" class="m-0 swal-confirm-form"
+                                          data-swal-text="Remove this class from your cart?">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0"
+                                                title="Remove">
+                                            <i class="fas fa-trash-alt fa-sm"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* ── Order summary footer ── *@
+        <div class="px-4 py-3 border-top d-flex justify-content-end align-items-center gap-4"
+             style="background:#fafafa;">
+            <div class="text-muted small">
+                @Model.Count item@(Model.Count == 1 ? "" : "s")
+                @if (Model.Any(x => x.DiscountAmount > 0))
+                {
+                    <span class="text-success ms-2">
+                        −$@Model.Sum(x => x.DiscountAmount).ToString("0.00") saved
+                    </span>
+                }
+            </div>
+            <div class="fw-bold fs-5">
+                Total &nbsp;$@Model.Sum(x => x.FinalPrice).ToString("0.00")
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @* ── Empty state ── *@
+    <div class="text-center py-5 my-4">
+        <div class="mb-3" style="font-size:3rem; color:#ced4da;">
+            <i class="fas fa-cart-shopping"></i>
+        </div>
+        <h5 class="fw-semibold mb-2">Your cart is empty</h5>
+        <p class="text-muted small mb-4">
+            Browse our classes and add one to your cart to get started.
+        </p>
+        <a asp-controller="Classes" asp-action="Index" class="btn btn-dark px-4">
+            Browse Classes
+        </a>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.swal-confirm-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Remove from Cart?',
+                    text: form.dataset.swalText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, remove'
+                }).then(function (result) {
+                    if (result.isConfirmed) form.submit();
+                });
+            });
+        });
+    </script>
+}

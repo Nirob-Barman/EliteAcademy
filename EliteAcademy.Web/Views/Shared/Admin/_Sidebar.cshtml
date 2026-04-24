@@ -1,0 +1,46 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    string NavClass(string controller, string action)
+        => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase)
+           && string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase)
+            ? "nav-link px-3 py-2 rounded bg-danger text-white fw-semibold shadow-sm"
+            : "nav-link text-light px-3 py-2 rounded";
+}
+
+<div class="h-100 d-flex flex-column p-3 p-lg-4 text-light">
+    <a class="text-decoration-none text-white d-block mb-4" asp-controller="Home" asp-action="Index">
+        <div class="fw-bold fs-5">
+            &#9971; Elite Academy
+            <span class="badge bg-danger-subtle text-danger ms-1">Admin</span>
+        </div>
+        <div class="small text-light-emphasis mt-1">Control center</div>
+    </a>
+
+    <nav class="nav flex-column gap-2">
+        <a class="@NavClass("Admin", "Dashboard")" asp-controller="Admin" asp-action="Dashboard">Dashboard</a>
+        <a class="@NavClass("Users", "Index")" asp-controller="Users" asp-action="Index">Users</a>
+        <a class="@NavClass("Admin", "Students")" asp-controller="Admin" asp-action="Students">Students</a>
+        <a class="@NavClass("Admin", "Classes")" asp-controller="Admin" asp-action="Classes">Classes</a>
+        <a class="@NavClass("Admin", "InstructorApplications")" asp-controller="Admin" asp-action="InstructorApplications">Instructor Applications</a>
+        <a class="@NavClass("Admin", "RevenueReport")" asp-controller="Admin" asp-action="RevenueReport">Revenue Report</a>
+        <a class="@NavClass("Coupon", "Index")" asp-controller="Coupon" asp-action="Index">Coupons</a>
+        <a class="@NavClass("PaymentGateway", "Index")" asp-controller="PaymentGateway" asp-action="Index">Payment Gateways</a>
+        <a class="@NavClass("AuditLogs", "Index")" asp-controller="AuditLogs" asp-action="Index">Audit Logs</a>
+    </nav>
+
+    <div class="mt-auto pt-4 border-top border-secondary-subtle">
+        <div class="small text-light-emphasis">Signed in as</div>
+        <div class="fw-semibold text-truncate mb-2">@User.Identity!.Name</div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Account" asp-action="Profile"
+               class="btn btn-sm btn-outline-light flex-fill text-center" style="font-size:.8rem;">
+                Profile
+            </a>
+            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0 flex-fill">
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100" style="font-size:.8rem;">Logout</button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,111 @@
+@model List<EliteAcademy.Application.DTOs.Coupon.CouponDto>
+
+@{
+    ViewData["Title"] = "Coupons";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Coupon Management</h2>
+    <a asp-action="Create" class="btn btn-dark">+ New Coupon</a>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Code</th>
+                        <th>Discount</th>
+                        <th>Usages</th>
+                        <th>Expires</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var coupon in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold font-monospace">@coupon.Code</td>
+                            <td>@coupon.DiscountPercent%</td>
+                            <td>
+                                @coupon.UsageCount / @(coupon.MaxUsages == 0 ? "∞" : coupon.MaxUsages.ToString())
+                                @if (coupon.IsFull)
+                                {
+                                    <span class="badge bg-danger ms-1">Full</span>
+                                }
+                            </td>
+                            <td class="@(coupon.IsExpired ? "text-danger" : "text-muted") small">
+                                @coupon.ExpiresAt.ToString("MMM dd, yyyy")
+                                @if (coupon.IsExpired) { <span class="badge bg-danger ms-1">Expired</span> }
+                            </td>
+                            <td>
+                                @if (coupon.IsActive && !coupon.IsExpired && !coupon.IsFull)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else if (!coupon.IsActive)
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">Unavailable</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@coupon.Id" class="btn btn-sm btn-outline-dark me-1">Edit</a>
+                                <form asp-action="ToggleActive" asp-route-id="@coupon.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm @(coupon.IsActive ? "btn-outline-warning" : "btn-outline-success") me-1">
+                                        @(coupon.IsActive ? "Deactivate" : "Activate")
+                                    </button>
+                                </form>
+                                <form asp-action="Delete" asp-route-id="@coupon.Id" method="post" class="d-inline swal-confirm-form"
+                                      data-swal-text="Delete coupon @coupon.Code?">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fa-solid fa-ticket fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Coupons Yet</h5>
+        <p class="text-muted mb-4">Create discount coupons to offer students reduced pricing on enrollments.</p>
+        <a asp-action="Create" class="btn btn-dark">
+            <i class="fa-solid fa-plus me-1"></i> Create Your First Coupon
+        </a>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.swal-confirm-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Delete Coupon?',
+                    text: form.dataset.swalText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete'
+                }).then(function (result) {
+                    if (result.isConfirmed) form.submit();
+                });
+            });
+        });
+    </script>
+}

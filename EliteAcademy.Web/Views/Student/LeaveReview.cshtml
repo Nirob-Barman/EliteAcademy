@@ -1,0 +1,75 @@
+@model EliteAcademy.Web.ViewModels.Student.ReviewFormViewModel
+
+@{
+    ViewData["Title"] = "Leave a Review";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white fw-bold">
+                Leave a Review — @Model.ClassName
+            </div>
+            <div class="card-body">
+                <form asp-action="LeaveReview" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ClassId" />
+                    <input type="hidden" asp-for="ClassName" />
+
+                    <div asp-validation-summary="All" class="alert alert-danger small" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Your Rating</label>
+                        <div class="star-rating d-flex gap-2 fs-3">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <label class="star-label" data-value="@i" style="cursor:pointer;color:#ccc;">&#9733;</label>
+                            }
+                        </div>
+                        <input type="hidden" asp-for="Rating" id="ratingInput" />
+                        <span asp-validation-for="Rating" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Comment" class="form-label fw-semibold">Comment <span class="text-muted small">(optional)</span></label>
+                        <textarea asp-for="Comment" class="form-control" rows="4"
+                                  placeholder="Share your experience..."></textarea>
+                        <span asp-validation-for="Comment" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">Submit Review</button>
+                        <a asp-action="EnrolledClasses" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const stars = document.querySelectorAll('.star-label');
+            const input = document.getElementById('ratingInput');
+            let current = parseInt(input.value) || 0;
+
+            function paint(n) {
+                stars.forEach((s, i) => s.style.color = i < n ? '#ffc107' : '#ccc');
+            }
+
+            paint(current);
+
+            stars.forEach((s, i) => {
+                s.addEventListener('mouseover', () => paint(i + 1));
+                s.addEventListener('mouseleave', () => paint(current));
+                s.addEventListener('click', () => {
+                    current = i + 1;
+                    input.value = current;
+                    paint(current);
+                });
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Payment Cancelled";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-7 col-lg-5 text-center py-5">
+
+        <div class="mb-4">
+            <span style="font-size:4rem;color:#dc3545;">&#10007;</span>
+        </div>
+
+        <h2 class="fw-bold text-danger mb-2">Payment Cancelled</h2>
+        <p class="text-muted mb-4">
+            Your payment was cancelled and you have not been charged.
+            You can try again from your selections.
+        </p>
+
+        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+            <a asp-controller="Student" asp-action="Cart" class="btn btn-primary btn-lg px-5">
+                Back to My Cart
+            </a>
+            <a asp-controller="Classes" asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                Browse Classes
+            </a>
+        </div>
+
+    </div>
+</div>

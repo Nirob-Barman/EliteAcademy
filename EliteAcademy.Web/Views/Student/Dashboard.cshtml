@@ -1,0 +1,55 @@
+@model EliteAcademy.Application.DTOs.Student.StudentDashboardDto
+
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+<h2 class="mb-4 fw-bold">Student Dashboard</h2>
+
+<div class="row g-4">
+    <div class="col-sm-3">
+        <div class="card text-bg-warning shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.SelectedCount</div>
+                <div class="mt-1">Pending Selections</div>
+            </div>
+            <div class="card-footer text-center bg-transparent border-0 pb-3">
+                <a asp-action="Cart" class="btn btn-sm btn-dark">View Cart</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-bg-success shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.EnrolledCount</div>
+                <div class="mt-1">Enrolled Classes</div>
+            </div>
+            <div class="card-footer text-center bg-transparent border-0 pb-3">
+                <a asp-action="EnrolledClasses" class="btn btn-sm btn-dark">View Enrolled</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-bg-primary shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.TotalAvailableClasses</div>
+                <div class="mt-1">Available Classes</div>
+            </div>
+            <div class="card-footer text-center bg-transparent border-0 pb-3">
+                <a asp-controller="Classes" asp-action="Index" class="btn btn-sm btn-dark">Browse</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card text-bg-secondary shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-1 fw-bold">@Model.WishlistCount</div>
+                <div class="mt-1">Wishlist</div>
+            </div>
+            <div class="card-footer text-center bg-transparent border-0 pb-3">
+                <a asp-action="Wishlist" class="btn btn-sm btn-dark">View Wishlist</a>
+            </div>
+        </div>
+    </div>
+</div>

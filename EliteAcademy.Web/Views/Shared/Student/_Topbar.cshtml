@@ -1,0 +1,57 @@
+<div class="container-fluid py-3 px-3 px-lg-4 d-flex justify-content-between align-items-center gap-3">
+
+    @* Left: mobile menu toggle + page title *@
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-dark d-lg-none" type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#studentSidebarMobile"
+                aria-controls="studentSidebarMobile"
+                aria-label="Open student navigation">
+            <span class="fw-semibold">Menu</span>
+        </button>
+        <div>
+            <div class="small text-muted text-uppercase" style="letter-spacing:.04em;font-size:.7rem;">Student Portal</div>
+            <div class="fw-semibold fs-5">@ViewData["Title"]</div>
+        </div>
+    </div>
+
+    @* Right: notification bell + user dropdown *@
+    <div class="d-flex align-items-center gap-3">
+
+        <a class="position-relative text-dark text-decoration-none fs-5"
+           asp-controller="Notification" asp-action="Index" title="Notifications">
+            <i class="fas fa-bell"></i>
+            <span id="notif-badge-student"
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                  style="display:none;font-size:.65rem;"></span>
+        </a>
+
+        <div class="dropdown">
+            <a class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2"
+               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="d-none d-sm-inline">@User.Identity!.Name</span>
+                <i class="fas fa-user-circle d-sm-none"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                <li class="px-3 py-2 border-bottom">
+                    <div class="small fw-semibold text-truncate">@User.Identity!.Name</div>
+                    <span class="badge bg-primary" style="font-size:.65rem;">Student</span>
+                </li>
+                <li>
+                    <a class="dropdown-item small" asp-controller="Account" asp-action="Profile">
+                        <i class="fas fa-user fa-sm me-2 text-muted"></i>Account Settings
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider my-1" /></li>
+                <li>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="dropdown-item small text-danger">
+                            <i class="fas fa-sign-out-alt fa-sm me-2"></i>Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+</div>

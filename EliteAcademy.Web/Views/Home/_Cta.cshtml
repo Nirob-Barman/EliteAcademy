@@ -1,0 +1,12 @@
+<section class="text-center py-4">
+    <h3 class="fw-bold mb-3">Ready to Start?</h3>
+    <a asp-controller="Instructors" asp-action="Index" class="btn btn-outline-dark me-2">Meet Our Instructors</a>
+    @if (!User.Identity!.IsAuthenticated)
+    {
+        <a asp-controller="Account" asp-action="Register" class="btn btn-dark">Join Today</a>
+    }
+    else
+    {
+        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-dark">Go to Dashboard</a>
+    }
+</section>

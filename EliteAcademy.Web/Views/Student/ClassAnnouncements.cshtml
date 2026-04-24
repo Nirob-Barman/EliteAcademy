@@ -1,0 +1,40 @@
+@model List<EliteAcademy.Application.DTOs.Instructor.AnnouncementDto>
+
+@{
+    ViewData["Title"] = "Announcements";
+    Layout = "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Announcements</h2>
+        <p class="text-muted mb-0 small">@ViewBag.ClassName</p>
+    </div>
+    <a asp-action="EnrolledClasses" class="btn btn-outline-secondary">Back to My Classes</a>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card shadow-sm border-0">
+        <div class="list-group list-group-flush">
+            @foreach (var a in Model)
+            {
+                <div class="list-group-item py-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold">@a.Title</span>
+                        <span class="text-muted small">@a.CreatedAt.ToString("dd MMM yyyy HH:mm")</span>
+                    </div>
+                    <div class="text-muted" style="white-space:pre-wrap">@a.Body</div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fa-solid fa-bullhorn fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Announcements Yet</h5>
+        <p class="text-muted mb-0">The instructor hasn't posted any announcements for this class yet.</p>
+    </div>
+}

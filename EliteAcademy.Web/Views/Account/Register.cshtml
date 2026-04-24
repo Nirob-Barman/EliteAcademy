@@ -1,0 +1,257 @@
+@model EliteAcademy.Web.ViewModels.Account.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Create Account";
+    Layout = "~/Views/Shared/Account/_AuthLayout.cshtml";
+}
+
+<div class="auth-wrapper">
+
+    @* ── Brand panel (desktop only) ──────────────────────────────────── *@
+    <div class="col-lg-5 auth-brand-panel d-none d-lg-flex flex-column">
+        <a asp-controller="Home" asp-action="Index" class="text-decoration-none mb-4">
+            <div class="fw-bold fs-4 text-warning">&#9971; Elite Academy</div>
+            <div class="text-white-50 small">Your learning journey starts here</div>
+        </a>
+
+        <h2 class="fw-bold text-white mb-2 lh-sm">Start learning<br>for free today</h2>
+        <p class="text-white-50 mb-4" style="font-size:.92rem;">
+            Create your account in seconds and get instant access
+            to hundreds of expert-led classes.
+        </p>
+
+        <div class="mb-4">
+            <div class="auth-feature">
+                <div class="auth-feature-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div>
+                    <div class="text-white fw-semibold" style="font-size:.88rem;">Browse & Enroll</div>
+                    <div class="text-white-50" style="font-size:.78rem;">Select classes, pay securely, and start learning.</div>
+                </div>
+            </div>
+            <div class="auth-feature">
+                <div class="auth-feature-icon"><i class="fas fa-chart-line"></i></div>
+                <div>
+                    <div class="text-white fw-semibold" style="font-size:.88rem;">Track Your Progress</div>
+                    <div class="text-white-50" style="font-size:.78rem;">Dashboard with all your enrollments in one place.</div>
+                </div>
+            </div>
+            <div class="auth-feature">
+                <div class="auth-feature-icon"><i class="fas fa-comments"></i></div>
+                <div>
+                    <div class="text-white fw-semibold" style="font-size:.88rem;">Q&A with Instructors</div>
+                    <div class="text-white-50" style="font-size:.78rem;">Ask questions and get direct answers from your instructor.</div>
+                </div>
+            </div>
+            <div class="auth-feature">
+                <div class="auth-feature-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div>
+                    <div class="text-white fw-semibold" style="font-size:.88rem;">Become an Instructor</div>
+                    <div class="text-white-50" style="font-size:.78rem;">Apply to teach and share your expertise with learners.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-4 pt-3 border-top border-white border-opacity-10">
+            <div class="auth-stat">
+                <div class="auth-stat-number">500+</div>
+                <div class="auth-stat-label">Students</div>
+            </div>
+            <div class="auth-stat">
+                <div class="auth-stat-number">50+</div>
+                <div class="auth-stat-label">Classes</div>
+            </div>
+            <div class="auth-stat">
+                <div class="auth-stat-number">20+</div>
+                <div class="auth-stat-label">Instructors</div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Form panel ──────────────────────────────────────────────────── *@
+    <div class="col-12 col-lg-7 auth-form-panel">
+        <div class="auth-form-inner">
+
+            @* Mobile brand *@
+            <a asp-controller="Home" asp-action="Index" class="text-decoration-none d-lg-none d-block mb-4">
+                <span class="fw-bold fs-5">&#9971; Elite Academy</span>
+            </a>
+
+            <h3 class="fw-bold mb-1">Create your account</h3>
+            <p class="text-muted mb-4" style="font-size:.9rem;">It's free — no credit card required</p>
+
+            <form asp-action="Register" asp-controller="Account" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3">
+
+                    @* First / Last name *@
+                    <div class="col-sm-6">
+                        <label asp-for="FirstName" class="form-label fw-medium small mb-1">First Name</label>
+                        <input asp-for="FirstName" class="form-control" placeholder="John" />
+                        <span asp-validation-for="FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label asp-for="LastName" class="form-label fw-medium small mb-1">Last Name</label>
+                        <input asp-for="LastName" class="form-control" placeholder="Doe" />
+                        <span asp-validation-for="LastName" class="text-danger small"></span>
+                    </div>
+
+                    @* Username *@
+                    <div class="col-sm-6">
+                        <label asp-for="Username" class="form-label fw-medium small mb-1">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-at fa-sm"></i></span>
+                            <input asp-for="Username" class="form-control input-icon" placeholder="johndoe" />
+                        </div>
+                        <span asp-validation-for="Username" class="text-danger small"></span>
+                    </div>
+
+                    @* Email *@
+                    <div class="col-sm-6">
+                        <label asp-for="Email" class="form-label fw-medium small mb-1">Email address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope fa-sm"></i></span>
+                            <input asp-for="Email" class="form-control input-icon" placeholder="you@example.com" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    @* Password *@
+                    <div class="col-sm-6">
+                        <label asp-for="Password" class="form-label fw-medium small mb-1">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock fa-sm"></i></span>
+                            <input asp-for="Password" id="regPassword" class="form-control input-icon" placeholder="••••••••" />
+                            <button type="button" class="input-group-text password-toggle" onclick="togglePwd('regPassword', this)">
+                                <i class="fas fa-eye fa-sm"></i>
+                            </button>
+                        </div>
+                        <div class="text-muted mt-1" style="font-size:.75rem;">Min 6 chars, 1 uppercase, 1 special character</div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    @* Confirm Password *@
+                    <div class="col-sm-6">
+                        <label asp-for="ConfirmPassword" class="form-label fw-medium small mb-1">Confirm Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock fa-sm"></i></span>
+                            <input asp-for="ConfirmPassword" id="regConfirm" class="form-control input-icon" placeholder="••••••••" />
+                            <button type="button" class="input-group-text password-toggle" onclick="togglePwd('regConfirm', this)">
+                                <i class="fas fa-eye fa-sm"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+
+                    @* Phone *@
+                    <div class="col-sm-6">
+                        <label asp-for="PhoneNumber" class="form-label fw-medium small mb-1">Phone Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone fa-sm"></i></span>
+                            <input asp-for="PhoneNumber" class="form-control input-icon" placeholder="+1 555 000 0000" />
+                        </div>
+                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                    </div>
+
+                    @* Gender *@
+                    <div class="col-sm-6">
+                        <label asp-for="Gender" class="form-label fw-medium small mb-1">Gender</label>
+                        <select asp-for="Gender" class="form-select">
+                            <option value="">Select gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="text-danger small"></span>
+                    </div>
+
+                    @* Date of Birth *@
+                    <div class="col-sm-6">
+                        <label asp-for="DateOfBirth" class="form-label fw-medium small mb-1">Date of Birth <span class="text-muted fw-normal">(optional)</span></label>
+                        <input asp-for="DateOfBirth" type="date" class="form-control" />
+                        <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                    </div>
+
+                    @* Profile Photo *@
+                    <div class="col-sm-6">
+                        <label asp-for="Photo" class="form-label fw-medium small mb-1">Profile Photo <span class="text-muted fw-normal">(optional)</span></label>
+                        <input asp-for="Photo" type="file" class="form-control" accept="image/*" onchange="previewPhoto(this)" />
+                        <span asp-validation-for="Photo" class="text-danger small"></span>
+                    </div>
+
+                    @* Address *@
+                    <div class="col-12">
+                        <label asp-for="Address" class="form-label fw-medium small mb-1">Address <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea asp-for="Address" class="form-control" rows="2" placeholder="123 Main St, City, Country"></textarea>
+                        <span asp-validation-for="Address" class="text-danger small"></span>
+                    </div>
+
+                    @* Terms *@
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input asp-for="IsAgreedToTerms" class="form-check-input" />
+                            <label asp-for="IsAgreedToTerms" class="form-check-label small text-muted">
+                                I agree to the
+                                <a asp-controller="About" asp-action="Index" class="text-dark fw-semibold text-decoration-none">Terms &amp; Conditions</a>
+                            </label>
+                        </div>
+                        <span asp-validation-for="IsAgreedToTerms" class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <div class="d-grid mt-4 mb-3">
+                    <button type="submit" class="btn btn-auth">Create Account</button>
+                </div>
+
+                <p class="text-center text-muted small mb-0">
+                    Already have an account?
+                    <a asp-action="Login" asp-controller="Account" class="fw-semibold text-dark text-decoration-none">Sign in &rarr;</a>
+                </p>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+@if (TempData["SuccessMessage"] != null)
+{
+    <text>Swal.fire({ icon: 'success', title: 'Success', text: '@TempData["SuccessMessage"]', position: 'top-end', timer: 4000, toast: true, timerProgressBar: true, showConfirmButton: false });</text>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <text>Swal.fire({ icon: 'error', title: 'Registration Failed', text: '@TempData["ErrorMessage"]', position: 'top-end', timer: 5000, toast: true, timerProgressBar: true, showConfirmButton: false });</text>
+}
+function togglePwd(id, btn) {
+    const input = document.getElementById(id);
+    const icon  = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            let preview = document.getElementById('photoPreview');
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.id = 'photoPreview';
+                preview.className = 'rounded-circle mt-2';
+                preview.style.cssText = 'width:52px;height:52px;object-fit:cover;border:2px solid #dee2e6;';
+                input.parentElement.appendChild(preview);
+            }
+            preview.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+}

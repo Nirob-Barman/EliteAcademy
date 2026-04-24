@@ -1,0 +1,68 @@
+@model EliteAcademy.Application.DTOs.Admin.AdminClassEnrollmentsDto
+
+@{
+    ViewData["Title"] = $"Enrollments — {Model.ClassName}";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+}
+
+<div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold mb-1">@Model.ClassName</h2>
+        <div class="text-muted small">
+            Instructor: <strong>@Model.InstructorName</strong> &nbsp;|&nbsp;
+            Price: <strong>$@Model.Price.ToString("0.00")</strong> &nbsp;|&nbsp;
+            Available Seats: <strong>@Model.AvailableSeats</strong>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportEnrollments" asp-route-id="@Model.ClassId"
+           class="btn btn-outline-success btn-sm">
+            &#8659; Export CSV
+        </a>
+        <a asp-action="Classes" class="btn btn-outline-secondary btn-sm">← Back to Classes</a>
+    </div>
+</div>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <span class="badge bg-info text-dark fs-6">@Model.Enrollments.Count enrolled</span>
+</div>
+
+@if (Model.Enrollments.Any())
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Enrolled At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int i = 1; }
+                        @foreach (var row in Model.Enrollments.OrderByDescending(e => e.EnrolledAt))
+                        {
+                            <tr>
+                                <td class="text-muted">@(i++)</td>
+                                <td class="fw-semibold">@row.StudentName</td>
+                                <td>@row.Email</td>
+                                <td>@row.EnrolledAt.ToString("dd MMM yyyy, HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fa-solid fa-user-graduate fa-3x text-muted mb-3"></i>
+        <h5 class="fw-semibold">No Students Enrolled Yet</h5>
+        <p class="text-muted mb-0">Students who enroll in this class will appear here.</p>
+    </div>
+}

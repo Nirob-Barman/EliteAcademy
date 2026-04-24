@@ -1,0 +1,198 @@
+@model EliteAcademy.Application.DTOs.Admin.RevenueReportDto
+
+@{
+    ViewData["Title"] = $"Revenue Report — {Model.Year}";
+    Layout = "~/Views/Shared/Admin/_Layout.cshtml";
+    var currentYear = DateTime.UtcNow.Year;
+}
+
+@section Styles {
+    <style>
+        @@media print {
+            aside, header, .no-print { display: none !important; }
+            .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
+            body { background: white !important; }
+        }
+    </style>
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <h2 class="fw-bold mb-0">Revenue Report</h2>
+    <div class="d-flex gap-2 no-print">
+        <a asp-action="ExportRevenueReport" asp-route-year="@Model.Year"
+           class="btn btn-outline-success btn-sm">&#8659; Export CSV</a>
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">&#128438; Print</button>
+    </div>
+</div>
+
+@* Year selector *@
+<div class="d-flex gap-2 align-items-center mb-4 no-print">
+    <span class="text-muted small">Year:</span>
+    @for (int y = currentYear; y >= currentYear - 4; y--)
+    {
+        <a asp-action="RevenueReport" asp-route-year="@y"
+           class="btn btn-sm @(Model.Year == y ? "btn-danger" : "btn-outline-secondary")">@y</a>
+    }
+</div>
+
+@* KPI cards *@
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-success shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-2 fw-bold">$@Model.TotalRevenue.ToString("N2")</div>
+                <div class="mt-1">Total Revenue @Model.Year</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-primary shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-2 fw-bold">@Model.TotalTransactions</div>
+                <div class="mt-1">Paid Transactions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-info shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-2 fw-bold">@Model.ByClass.Count</div>
+                <div class="mt-1">Classes with Revenue</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-bg-dark shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="fs-2 fw-bold">@Model.ByInstructor.Count</div>
+                <div class="mt-1">Active Instructors</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    @* Monthly breakdown *@
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold bg-dark text-white">Monthly Revenue — @Model.Year</div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Month</th>
+                            <th class="text-end">Revenue</th>
+                            <th class="text-end">Transactions</th>
+                            <th style="width:40%">Bar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var maxRevenue = Model.ByMonth.Max(m => m.Revenue);
+                        }
+                        @foreach (var month in Model.ByMonth)
+                        {
+                            var barPct = maxRevenue > 0 ? (int)(month.Revenue / maxRevenue * 100) : 0;
+                            <tr>
+                                <td>@month.MonthName</td>
+                                <td class="text-end fw-semibold">$@month.Revenue.ToString("N2")</td>
+                                <td class="text-end">@month.Transactions</td>
+                                <td>
+                                    @if (barPct > 0)
+                                    {
+                                        <div class="progress" style="height:14px;">
+                                            <div class="progress-bar bg-success" role="progressbar"
+                                                 style="width:@(barPct)%"></div>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* Revenue by class *@
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold bg-dark text-white d-flex justify-content-between">
+                <span>Revenue by Class</span>
+                <span class="badge bg-secondary">@Model.ByClass.Count</span>
+            </div>
+            @if (Model.ByClass.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Class</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Enrolled</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.ByClass)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@c.ClassName</td>
+                                    <td class="text-end">$@c.Revenue.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-info text-dark">@c.Enrolled</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="card-body text-muted">No class revenue data for @Model.Year.</div>
+            }
+        </div>
+    </div>
+
+    @* Revenue by instructor *@
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold bg-dark text-white d-flex justify-content-between">
+                <span>Revenue by Instructor</span>
+                <span class="badge bg-secondary">@Model.ByInstructor.Count</span>
+            </div>
+            @if (Model.ByInstructor.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Instructor</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Enrolled</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ins in Model.ByInstructor)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@ins.InstructorName</td>
+                                    <td class="text-end">$@ins.Revenue.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-info text-dark">@ins.Enrolled</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="card-body text-muted">No instructor revenue data for @Model.Year.</div>
+            }
+        </div>
+    </div>
+
+</div>

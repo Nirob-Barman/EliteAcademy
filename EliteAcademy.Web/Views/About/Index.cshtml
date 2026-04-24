@@ -1,0 +1,108 @@
+@model EliteAcademy.Application.DTOs.Home.PlatformStatsDto?
+
+@{
+    ViewData["Title"] = "About Us";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@* ── Hero ──────────────────────────────────────────────────────────────── *@
+<section class="bg-dark text-white rounded-3 py-5 px-4 mb-5 text-center">
+    <h1 class="display-5 fw-bold mb-3">About Elite Academy</h1>
+    <p class="lead text-light-emphasis mx-auto" style="max-width:620px;">
+        A modern learning platform connecting ambitious students with expert instructors
+        through practical, career-focused classes.
+    </p>
+</section>
+
+@* ── Mission & Vision ─────────────────────────────────────────────────── *@
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="fs-2 mb-2">&#127919;</div>
+                <h4 class="fw-bold mb-3">Our Mission</h4>
+                <p class="text-muted mb-0">
+                    To provide accessible, high-quality education that empowers students to achieve
+                    excellence — through structured programs led by real-world experts.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="fs-2 mb-2">&#128161;</div>
+                <h4 class="fw-bold mb-3">Our Vision</h4>
+                <p class="text-muted mb-0">
+                    To be the most trusted online academy — connecting passionate learners with
+                    world-class instructors across every discipline.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Live Stats ───────────────────────────────────────────────────────── *@
+@if (Model != null)
+{
+    <div class="row g-3 mb-5 text-center">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-dark text-white shadow-sm py-4">
+                <div class="fs-1 fw-bold text-warning">@Model.ActiveStudents</div>
+                <div class="small mt-1 text-light-emphasis">Students</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-dark text-white shadow-sm py-4">
+                <div class="fs-1 fw-bold text-warning">@Model.ExpertInstructors</div>
+                <div class="small mt-1 text-light-emphasis">Instructors</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-dark text-white shadow-sm py-4">
+                <div class="fs-1 fw-bold text-warning">@Model.ApprovedClasses</div>
+                <div class="small mt-1 text-light-emphasis">Classes</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-dark text-white shadow-sm py-4">
+                <div class="fs-1 fw-bold text-warning">@Model.TotalEnrollments</div>
+                <div class="small mt-1 text-light-emphasis">Enrollments</div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── What We Offer ────────────────────────────────────────────────────── *@
+<h4 class="fw-bold mb-4">What We Offer</h4>
+<div class="row g-3 mb-5">
+    @{
+        var features = new[]
+        {
+            ("&#127979;", "Expert-Led Classes",       "Learn directly from vetted instructors with real-world experience in their field."),
+            ("&#128197;", "Flexible Enrollment",      "Enroll on your schedule — no fixed start dates or deadlines to worry about."),
+            ("&#128200;", "Progress Dashboard",       "Track your selections, enrollments, and learning history in one clear view."),
+            ("&#128274;", "Secure Payments",          "Multiple payment gateways with encrypted credentials and coupon code support."),
+            ("&#128172;", "Q&A with Instructors",     "Ask questions directly on each class page and get answers from your instructor."),
+            ("&#11088;",  "Reviews & Ratings",        "Honest peer reviews help you choose the right class before you commit."),
+        };
+    }
+    @foreach (var (icon, title, desc) in features)
+    {
+        <div class="col-sm-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="fs-3 mb-2">@Html.Raw(icon)</div>
+                    <h6 class="fw-bold mb-1">@title</h6>
+                    <p class="text-muted small mb-0">@desc</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* ── CTA ──────────────────────────────────────────────────────────────── *@
+<div class="text-center py-3">
+    <a asp-controller="Classes" asp-action="Index" class="btn btn-dark me-2">Browse Classes</a>
+    <a asp-controller="Instructors" asp-action="Index" class="btn btn-outline-dark">Meet Our Instructors</a>
+</div>

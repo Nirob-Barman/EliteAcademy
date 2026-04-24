@@ -1,0 +1,62 @@
+@model List<EliteAcademy.Application.DTOs.Notification.NotificationDto>
+
+@{
+    ViewData["Title"] = "Notifications";
+    Layout = User.IsInRole("Admin")      ? "~/Views/Shared/Admin/_Layout.cshtml"
+           : User.IsInRole("Instructor") ? "~/Views/Shared/Instructor/_Layout.cshtml"
+           :                               "~/Views/Shared/Student/_Layout.cshtml";
+}
+
+@if (Model != null && Model.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3">
+            <span class="fw-semibold">
+                <i class="fas fa-bell me-2 text-muted"></i>Notifications
+            </span>
+            <span class="badge bg-primary rounded-pill">@Model.Count</span>
+        </div>
+        <div class="list-group list-group-flush">
+            @foreach (var n in Model)
+            {
+                <div class="list-group-item list-group-item-action px-4 py-3
+                            @(!n.IsRead ? "border-start border-3 border-primary bg-primary bg-opacity-10" : "")">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                @if (!n.IsRead)
+                                {
+                                    <span class="badge bg-primary rounded-pill" style="font-size:.6rem;padding:.25em .5em;">New</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(n.Link))
+                                {
+                                    <a href="@n.Link" class="fw-semibold text-decoration-none text-dark small">@n.Title</a>
+                                }
+                                else
+                                {
+                                    <span class="fw-semibold small">@n.Title</span>
+                                }
+                            </div>
+                            <div class="text-muted" style="font-size:.82rem;">@n.Message</div>
+                        </div>
+                        <div class="text-muted text-nowrap flex-shrink-0" style="font-size:.75rem;">
+                            @n.CreatedAt.ToString("MMM dd, yyyy")
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5 my-4">
+        <div class="mb-3" style="font-size:3rem;color:#ced4da;">
+            <i class="fas fa-bell-slash"></i>
+        </div>
+        <h5 class="fw-semibold mb-2">No notifications yet</h5>
+        <p class="text-muted small mb-0">
+            You're all caught up. New notifications will appear here.
+        </p>
+    </div>
+}
