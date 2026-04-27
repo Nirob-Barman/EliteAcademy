@@ -21,6 +21,7 @@ out/
 # Migrations/
 
 ## User secrets & local config (never commit)
+appsettings.json
 appsettings.Development.json
 appsettings.Local.json
 secrets.json
