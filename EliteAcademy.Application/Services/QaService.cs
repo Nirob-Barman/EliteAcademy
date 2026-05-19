@@ -31,13 +31,13 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<QaQuestionDto>>> GetClassQaAsync(int classId)
         {
-            var questions = await _executor.ToListAsync(_context.QaQuestions.Where(q => q.ClassId == classId));
+            var questions = await _executor.ToListAsync(_context.QaQuestions.Where(q => q.ClassId == classId), noTracking: true);
 
             if (!questions.Any())
                 return Result<List<QaQuestionDto>>.Ok(new List<QaQuestionDto>());
 
             var questionIds = questions.Select(q => q.Id).ToHashSet();
-            var answers = await _executor.ToListAsync(_context.QaAnswers.Where(a => questionIds.Contains(a.QuestionId)));
+            var answers = await _executor.ToListAsync(_context.QaAnswers.Where(a => questionIds.Contains(a.QuestionId)), noTracking: true);
 
             var users = await _userManager.GetAllUsersAsync();
             var userMap = users.ToDictionary(u => u.Id ?? "", u => u);
@@ -108,12 +108,12 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(dto.AnswerText))
                 return Result<bool>.FailField("AnswerText", "Answer cannot be empty.");
 
-            var question = await _executor.FirstOrDefaultAsync(_context.QaQuestions.Where(q => q.Id == dto.QuestionId));
+            var question = await _executor.FirstOrDefaultAsync(_context.QaQuestions.Where(q => q.Id == dto.QuestionId), noTracking: true);
             if (question == null)
                 return Result<bool>.Fail("Question not found.");
 
             // Verify the question belongs to one of this instructor's classes
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == question.ClassId));
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == question.ClassId), noTracking: true);
             if (cls == null || cls.InstructorId != instructorId)
                 return Result<bool>.Fail("Not authorized to answer this question.");
 
@@ -133,7 +133,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> DeleteQuestionAsync(int questionId)
         {
             var userId = _userContextService.UserId!;
-            var question = await _executor.FirstOrDefaultAsync(_context.QaQuestions.Where(q => q.Id == questionId));
+            var question = await _executor.FirstOrDefaultAsync(_context.QaQuestions.Where(q => q.Id == questionId), noTracking: true);
             if (question == null)
                 return Result<bool>.Fail("Question not found.");
 
@@ -150,7 +150,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> DeleteAnswerAsync(int answerId)
         {
             var instructorId = _userContextService.UserId!;
-            var answer = await _executor.FirstOrDefaultAsync(_context.QaAnswers.Where(a => a.Id == answerId));
+            var answer = await _executor.FirstOrDefaultAsync(_context.QaAnswers.Where(a => a.Id == answerId), noTracking: true);
             if (answer == null)
                 return Result<bool>.Fail("Answer not found.");
             if (answer.InstructorId != instructorId)

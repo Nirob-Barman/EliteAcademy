@@ -61,7 +61,7 @@ namespace EliteAcademy.Application.Services
                     IsRead    = n.IsRead,
                     Link      = n.Link,
                     CreatedAt = n.CreatedAt
-                }));
+                }), noTracking: true);
 
             return Result<List<NotificationDto>>.Ok(items);
         }

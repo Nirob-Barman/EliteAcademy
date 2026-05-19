@@ -71,16 +71,16 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<InstructorDashboardDto>> GetDashboardAsync()
         {
             var instructorId = _userContextService.UserId!;
-            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId));
+            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId), noTracking: true);
 
             var classIds = classes.Select(c => c.Id).ToHashSet();
 
             var enrollments = classIds.Any()
-                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)))
+                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)), noTracking: true)
                 : new List<Enrollment>();
 
             var paidPreEnrollments = classIds.Any()
-                ? await _executor.ToListAsync(_context.PreEnrollments.Where(p => classIds.Contains(p.ClassId) && p.PaymentStatus == PaymentStatus.Paid))
+                ? await _executor.ToListAsync(_context.PreEnrollments.Where(p => classIds.Contains(p.ClassId) && p.PaymentStatus == PaymentStatus.Paid), noTracking: true)
                 : new List<PreEnrollment>();
 
             var totalRevenue = paidPreEnrollments
@@ -129,11 +129,11 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<ClassStudentDto>>> GetClassStudentsAsync(int classId)
         {
             var instructorId = _userContextService.UserId!;
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId), noTracking: true);
             if (cls == null || cls.InstructorId != instructorId)
                 return Result<List<ClassStudentDto>>.Fail("Class not found.");
 
-            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == classId));
+            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == classId), noTracking: true);
 
             var users = await _userManager.GetAllUsersAsync();
             var userMap = users.ToDictionary(u => u.Id ?? "", u => u);
@@ -159,11 +159,11 @@ namespace EliteAcademy.Application.Services
             var instructorIds = instructors.Select(u => u.Id ?? "").ToHashSet();
 
             var allClasses = await _executor.ToListAsync(
-                _context.Classes.Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId ?? "")));
+                _context.Classes.Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId ?? "")), noTracking: true);
 
             var classIds = allClasses.Select(c => c.Id).ToHashSet();
             var allEnrollments = classIds.Any()
-                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)))
+                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)), noTracking: true)
                 : new List<Enrollment>();
 
             var classCountMap = allClasses

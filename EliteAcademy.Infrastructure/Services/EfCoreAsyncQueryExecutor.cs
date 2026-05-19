@@ -5,17 +5,17 @@ namespace EliteAcademy.Infrastructure.Services
 {
     public class EfCoreAsyncQueryExecutor : IAsyncQueryExecutor
     {
-        public Task<List<T>> ToListAsync<T>(IQueryable<T> query, CancellationToken ct = default) =>
-        query.ToListAsync(ct);
+        public Task<List<T>> ToListAsync<T>(IQueryable<T> query, bool noTracking = false, CancellationToken ct = default) where T : class =>
+            (noTracking ? query.AsNoTracking() : query).ToListAsync(ct);
 
-        public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, CancellationToken ct = default) =>
-            query.FirstOrDefaultAsync(ct);
+        public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, bool noTracking = false, CancellationToken ct = default) where T : class =>
+            (noTracking ? query.AsNoTracking() : query).FirstOrDefaultAsync(ct);
 
-        public Task<T> SingleAsync<T>(IQueryable<T> query, CancellationToken ct = default) =>
-            query.SingleAsync(ct);
+        public Task<T> SingleAsync<T>(IQueryable<T> query, bool noTracking = false, CancellationToken ct = default) where T : class =>
+            (noTracking ? query.AsNoTracking() : query).SingleAsync(ct);
 
-        public Task<T?> SingleOrDefaultAsync<T>(IQueryable<T> query, CancellationToken ct = default) =>
-            query.SingleOrDefaultAsync(ct);
+        public Task<T?> SingleOrDefaultAsync<T>(IQueryable<T> query, bool noTracking = false, CancellationToken ct = default) where T : class =>
+            (noTracking ? query.AsNoTracking() : query).SingleOrDefaultAsync(ct);
 
         public Task<bool> AnyAsync<T>(IQueryable<T> query, CancellationToken ct = default) =>
             query.AnyAsync(ct);

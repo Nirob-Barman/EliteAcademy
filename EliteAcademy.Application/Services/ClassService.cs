@@ -34,7 +34,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<ClassDto>>> GetApprovedAsync()
         {
-            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.Status == ClassStatus.Approved));
+            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.Status == ClassStatus.Approved), noTracking: true);
 
             var users = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(
@@ -54,7 +54,7 @@ namespace EliteAcademy.Application.Services
             var user = await _userManager.FindByIdAsync(instructorId);
             var instructorName = user == null ? "" : $"{user.FirstName} {user.LastName}".Trim();
 
-            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId));
+            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId), noTracking: true);
 
             var dtos = classes
                 .Select(c => ClassMapper.ToDto(c, instructorName))
@@ -65,7 +65,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<ClassDto>> GetByIdAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == id));
+            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == id), noTracking: true);
             if (entity == null)
                 return Result<ClassDto>.Fail("Class not found.");
 

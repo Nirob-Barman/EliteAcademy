@@ -29,8 +29,8 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<PaymentGatewayDto>>> GetAllAsync()
         {
-            var all = await _executor.ToListAsync(_context.PaymentGateways);
-            var txCounts = (await _executor.ToListAsync(_context.PaymentTransactions))
+            var all = await _executor.ToListAsync(_context.PaymentGateways, noTracking: true);
+            var txCounts = (await _executor.ToListAsync(_context.PaymentTransactions, noTracking: true))
                 .GroupBy(t => t.GatewayId)
                 .ToDictionary(g => g.Key, g => g.Count());
 
@@ -50,7 +50,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<PaymentGatewayDto>> GetByIdAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id), noTracking: true);
             if (entity == null)
                 return Result<PaymentGatewayDto>.Fail("Gateway not found.");
 
@@ -67,7 +67,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<string>> GetDecryptedConfigAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id), noTracking: true);
             if (entity == null)
                 return Result<string>.Fail("Gateway not found.");
 
@@ -178,7 +178,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> DeleteAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id), noTracking: true);
             if (entity == null)
                 return Result<bool>.Fail("Gateway not found.");
 

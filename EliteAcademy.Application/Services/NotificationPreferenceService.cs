@@ -29,7 +29,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<NotificationPreferenceDto>.Fail("User not authenticated.");
 
-            var pref = await _executor.FirstOrDefaultAsync(_context.NotificationPreferences.Where(x => x.UserId == userId));
+            var pref = await _executor.FirstOrDefaultAsync(_context.NotificationPreferences.Where(x => x.UserId == userId), noTracking: true);
 
             if (pref == null)
                 pref = new NotificationPreference { UserId = userId };

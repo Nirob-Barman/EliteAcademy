@@ -40,7 +40,7 @@ namespace EliteAcademy.Application.Services
                     Title     = a.Title,
                     Body      = a.Body,
                     CreatedAt = a.CreatedAt
-                }));
+                }), noTracking: true);
 
             return Result<List<AnnouncementDto>>.Ok(items);
         }
@@ -52,7 +52,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(dto.Title))
                 return Result<bool>.FailField("Title", "Title is required.");
 
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == dto.ClassId));
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == dto.ClassId), noTracking: true);
             if (cls == null || cls.InstructorId != instructorId)
                 return Result<bool>.Fail("Class not found.");
             if (cls.Status != ClassStatus.Approved)
@@ -69,7 +69,7 @@ namespace EliteAcademy.Application.Services
             _context.Add(announcement);
             await _context.SaveChangesAsync();
 
-            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == dto.ClassId));
+            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == dto.ClassId), noTracking: true);
             foreach (var enrollment in enrollments)
             {
                 if (!string.IsNullOrWhiteSpace(enrollment.StudentId))
@@ -88,11 +88,11 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> DeleteAsync(int id)
         {
             var instructorId = _userContextService.UserId!;
-            var entity = await _executor.FirstOrDefaultAsync(_context.Announcements.Where(a => a.Id == id));
+            var entity = await _executor.FirstOrDefaultAsync(_context.Announcements.Where(a => a.Id == id), noTracking: true);
             if (entity == null)
                 return Result<bool>.Fail("Announcement not found.");
 
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == entity.ClassId));
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == entity.ClassId), noTracking: true);
             if (cls?.InstructorId != instructorId)
                 return Result<bool>.Fail("Not authorized.");
 

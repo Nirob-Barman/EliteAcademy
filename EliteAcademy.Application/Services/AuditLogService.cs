@@ -44,7 +44,7 @@ namespace EliteAcademy.Application.Services
             string? entityFilter = null, string? actionFilter = null,
             int page = 1, int pageSize = 30)
         {
-            var all = await _executor.ToListAsync(_context.AuditLogs);
+            var all = await _executor.ToListAsync(_context.AuditLogs, noTracking: true);
 
             if (!string.IsNullOrWhiteSpace(entityFilter))
                 all = all.Where(a => a.EntityName.Contains(entityFilter, StringComparison.OrdinalIgnoreCase)).ToList();

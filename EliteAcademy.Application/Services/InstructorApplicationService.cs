@@ -52,7 +52,7 @@ namespace EliteAcademy.Application.Services
             var existing = await _executor.FirstOrDefaultAsync(_context.InstructorApplications.Where(
                 a => a.ApplicantId == userId
                   && (a.Status == InstructorApplicationStatus.Pending
-                   || a.Status == InstructorApplicationStatus.Approved)));
+                   || a.Status == InstructorApplicationStatus.Approved)), noTracking: true);
 
             if (existing != null)
             {
@@ -89,7 +89,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<InstructorApplicationDto?>.Ok(null);
 
-            var apps = await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.ApplicantId == userId));
+            var apps = await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.ApplicantId == userId), noTracking: true);
             var latest = apps.OrderByDescending(a => a.CreatedAt).FirstOrDefault();
             return Result<InstructorApplicationDto?>.Ok(
                 latest != null ? InstructorApplicationMapper.ToDto(latest) : null);
@@ -97,7 +97,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<InstructorApplicationDto>>> GetAllAsync()
         {
-            var apps = (await _executor.ToListAsync(_context.InstructorApplications))
+            var apps = (await _executor.ToListAsync(_context.InstructorApplications, noTracking: true))
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(InstructorApplicationMapper.ToDto)
                 .ToList();
@@ -107,7 +107,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<InstructorApplicationDto>>> GetPendingAsync()
         {
-            var apps = (await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.Status == InstructorApplicationStatus.Pending)))
+            var apps = (await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.Status == InstructorApplicationStatus.Pending), noTracking: true))
                 .OrderBy(a => a.CreatedAt)
                 .Select(InstructorApplicationMapper.ToDto)
                 .ToList();

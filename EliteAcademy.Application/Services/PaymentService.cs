@@ -47,17 +47,17 @@ namespace EliteAcademy.Application.Services
             int preEnrollmentId, string gatewaySlug, string baseUrl)
         {
             var studentId     = _userContextService.UserId!;
-            var preEnrollment = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == preEnrollmentId));
+            var preEnrollment = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == preEnrollmentId), noTracking: true);
             if (preEnrollment == null || preEnrollment.StudentId != studentId)
                 return Result<string>.Fail("Selection not found.");
             if (preEnrollment.PaymentStatus != PaymentStatus.Pending)
                 return Result<string>.Fail("This selection has already been paid.");
 
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == preEnrollment.ClassId));
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == preEnrollment.ClassId), noTracking: true);
             if (cls == null || cls.AvailableSeats <= 0)
                 return Result<string>.Fail("No available seats remaining.");
 
-            var gateway = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Slug == gatewaySlug && g.IsActive));
+            var gateway = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Slug == gatewaySlug && g.IsActive), noTracking: true);
             if (gateway == null)
                 return Result<string>.Fail("Payment gateway not available.");
 
@@ -110,7 +110,7 @@ namespace EliteAcademy.Application.Services
             if (tx.Status != PaymentTransactionStatus.Pending)
                 return Result<bool>.Fail("Transaction already processed.");
 
-            var gateway = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == tx.GatewayId));
+            var gateway = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == tx.GatewayId), noTracking: true);
             if (gateway == null)
                 return Result<bool>.Fail("Gateway not found.");
 

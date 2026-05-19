@@ -153,7 +153,7 @@ namespace EliteAcademy.Application.Services
                         UserAgent    = x.UserAgent,
                         IsSuccessful = x.IsSuccessful,
                         ErrorMessage = x.ErrorMessage
-                    }));
+                    }), noTracking: true);
 
             return Result<List<LoginHistoryItemDto>>.Ok(records);
         }

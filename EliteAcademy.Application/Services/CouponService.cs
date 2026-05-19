@@ -29,7 +29,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<CouponDto>>> GetAllAsync()
         {
-            var all = (await _executor.ToListAsync(_context.Coupons))
+            var all = (await _executor.ToListAsync(_context.Coupons, noTracking: true))
                 .Select(CouponMapper.ToDto)
                 .ToList();
             return Result<List<CouponDto>>.Ok(all);
@@ -37,7 +37,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<CouponDto?>> GetByIdAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id));
+            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id), noTracking: true);
             return entity == null
                 ? Result<CouponDto?>.Fail("Coupon not found.")
                 : Result<CouponDto?>.Ok(CouponMapper.ToDto(entity));
@@ -89,7 +89,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> DeleteAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id));
+            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id), noTracking: true);
             if (entity == null)
                 return Result<bool>.Fail("Coupon not found.");
 
@@ -125,7 +125,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<decimal>> ValidateAndGetDiscountAsync(string code, decimal price)
         {
             var upper = code.Trim().ToUpper();
-            var coupon = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Code == upper));
+            var coupon = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Code == upper), noTracking: true);
 
             if (coupon == null)
                 return Result<decimal>.Fail("Invalid coupon code.");

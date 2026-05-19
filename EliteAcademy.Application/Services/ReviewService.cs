@@ -32,12 +32,12 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<ReviewDto>>> GetClassReviewsAsync(int classId)
         {
-            var reviews = await _executor.ToListAsync(_context.Reviews.Where(r => r.ClassId == classId));
+            var reviews = await _executor.ToListAsync(_context.Reviews.Where(r => r.ClassId == classId), noTracking: true);
 
             var users = await _userManager.GetAllUsersAsync();
             var userMap = users.ToDictionary(u => u.Id ?? "", u => $"{u.FirstName} {u.LastName}".Trim());
 
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId), noTracking: true);
             var dtos = reviews
                 .Select(r => ReviewMapper.ToDto(r,
                     userMap.GetValueOrDefault(r.StudentId ?? ""),
@@ -49,7 +49,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<Dictionary<int, (double Avg, int Count)>>> GetReviewSummaryAsync()
         {
-            var all = await _executor.ToListAsync(_context.Reviews);
+            var all = await _executor.ToListAsync(_context.Reviews, noTracking: true);
             var summary = all
                 .GroupBy(r => r.ClassId)
                 .ToDictionary(
@@ -62,7 +62,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<HashSet<int>>> GetReviewedClassIdsAsync()
         {
             var studentId = _userContextService.UserId!;
-            var ids = (await _executor.ToListAsync(_context.Reviews.Where(r => r.StudentId == studentId)))
+            var ids = (await _executor.ToListAsync(_context.Reviews.Where(r => r.StudentId == studentId), noTracking: true))
                 .Select(r => r.ClassId)
                 .ToHashSet();
 
@@ -101,7 +101,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> DeleteAsync(int reviewId)
         {
             var studentId = _userContextService.UserId!;
-            var review = await _executor.FirstOrDefaultAsync(_context.Reviews.Where(r => r.Id == reviewId));
+            var review = await _executor.FirstOrDefaultAsync(_context.Reviews.Where(r => r.Id == reviewId), noTracking: true);
             if (review == null)
                 return Result<bool>.Fail("Review not found.");
             if (review.StudentId != studentId)
