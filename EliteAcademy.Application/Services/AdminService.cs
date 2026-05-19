@@ -1,10 +1,10 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Admin;
 using EliteAcademy.Application.DTOs.Class;
 using EliteAcademy.Application.DTOs.Home;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Email;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
@@ -17,22 +17,25 @@ namespace EliteAcademy.Application.Services
 {
     public class AdminService : IAdminService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IUserManager _userManager;
-        private readonly IUserContextService _userContextService;
-        private readonly INotificationService _notificationService;
-        private readonly IAuditLogService _auditLogService;
-        private readonly IEmailService _emailService;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor   _executor;
+        private readonly IUserManager          _userManager;
+        private readonly IUserContextService   _userContextService;
+        private readonly INotificationService  _notificationService;
+        private readonly IAuditLogService      _auditLogService;
+        private readonly IEmailService         _emailService;
 
         public AdminService(
-            IUnitOfWork unitOfWork,
-            IUserManager userManager,
-            IUserContextService userContextService,
-            INotificationService notificationService,
-            IAuditLogService auditLogService,
-            IEmailService emailService)
+            IApplicationDbContext context,
+            IAsyncQueryExecutor   executor,
+            IUserManager          userManager,
+            IUserContextService   userContextService,
+            INotificationService  notificationService,
+            IAuditLogService      auditLogService,
+            IEmailService         emailService)
         {
-            _unitOfWork          = unitOfWork;
+            _context             = context;
+            _executor            = executor;
             _userManager         = userManager;
             _userContextService  = userContextService;
             _notificationService = notificationService;
@@ -45,20 +48,19 @@ namespace EliteAcademy.Application.Services
             var allUsers    = (await _userManager.GetAllUsersAsync()).ToList();
             var instructors = (await _userManager.GetUsersByRoleAsync("Instructor")).ToList();
             var students    = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
-            var allClasses  = (await _unitOfWork.Repository<Class>().GetAllAsync()).ToList();
-            var pendingApps = await _unitOfWork.Repository<InstructorApplication>()
-                                   .CountAsync(a => a.Status == InstructorApplicationStatus.Pending);
+            var allClasses  = await _executor.ToListAsync(_context.Classes);
+            var pendingApps = await _executor.CountAsync(_context.InstructorApplications.Where(a => a.Status == InstructorApplicationStatus.Pending));
 
             return Result<AdminDashboardDto>.Ok(new AdminDashboardDto
             {
-                TotalUsers                      = allUsers.Count,
-                TotalInstructors                = instructors.Count,
-                TotalStudents                   = students.Count,
-                TotalClasses                    = allClasses.Count,
-                PendingClasses                  = allClasses.Count(c => c.Status == ClassStatus.Pending),
-                ApprovedClasses                 = allClasses.Count(c => c.Status == ClassStatus.Approved),
-                RejectedClasses                 = allClasses.Count(c => c.Status == ClassStatus.Rejected),
-                PendingInstructorApplications   = pendingApps
+                TotalUsers                    = allUsers.Count,
+                TotalInstructors              = instructors.Count,
+                TotalStudents                 = students.Count,
+                TotalClasses                  = allClasses.Count,
+                PendingClasses                = allClasses.Count(c => c.Status == ClassStatus.Pending),
+                ApprovedClasses               = allClasses.Count(c => c.Status == ClassStatus.Approved),
+                RejectedClasses               = allClasses.Count(c => c.Status == ClassStatus.Rejected),
+                PendingInstructorApplications = pendingApps
             });
         }
 
@@ -114,7 +116,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<ClassDto>>> GetAllClassesAsync()
         {
-            var classes = (await _unitOfWork.Repository<Class>().GetAllAsync()).ToList();
+            var classes = await _executor.ToListAsync(_context.Classes);
             var users   = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(
                 u => u.Id ?? "",
@@ -129,7 +131,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> ApproveClassAsync(int classId)
         {
-            var entity = await _unitOfWork.Repository<Class>().GetByIdAsync(classId);
+            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 
@@ -137,8 +139,7 @@ namespace EliteAcademy.Application.Services
             entity.Feedback  = null;
             entity.UpdatedAt = DateTime.UtcNow;
             entity.UpdatedBy = _userContextService.UserId;
-            _unitOfWork.Repository<Class>().Update(entity);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             if (!string.IsNullOrWhiteSpace(entity.InstructorId))
             {
@@ -152,7 +153,6 @@ namespace EliteAcademy.Application.Services
             await _auditLogService.LogAsync("Class", "Approve",
                 details: $"Approved class \"{entity.ClassName}\" (ID: {classId})");
 
-            // Email the instructor
             if (!string.IsNullOrWhiteSpace(entity.InstructorId))
             {
                 try
@@ -185,7 +185,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(feedback))
                 return Result<bool>.Fail("Feedback is required when rejecting a class.");
 
-            var entity = await _unitOfWork.Repository<Class>().GetByIdAsync(classId);
+            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 
@@ -193,8 +193,7 @@ namespace EliteAcademy.Application.Services
             entity.Feedback  = feedback;
             entity.UpdatedAt = DateTime.UtcNow;
             entity.UpdatedBy = _userContextService.UserId;
-            _unitOfWork.Repository<Class>().Update(entity);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             if (!string.IsNullOrWhiteSpace(entity.InstructorId))
             {
@@ -208,7 +207,6 @@ namespace EliteAcademy.Application.Services
             await _auditLogService.LogAsync("Class", "Reject",
                 details: $"Rejected class \"{entity.ClassName}\" (ID: {classId}). Feedback: {feedback}");
 
-            // Email the instructor
             if (!string.IsNullOrWhiteSpace(entity.InstructorId))
             {
                 try
@@ -241,9 +239,8 @@ namespace EliteAcademy.Application.Services
         {
             var students    = await _userManager.GetUsersByRoleAsync("Student");
             var instructors = await _userManager.GetUsersByRoleAsync("Instructor");
-            var enrollments = (await _unitOfWork.Repository<Enrollment>().GetAllAsync()).Count();
-            var classes     = (await _unitOfWork.Repository<Class>()
-                                   .Where(c => c.Status == ClassStatus.Approved)).Count();
+            var enrollments = await _executor.CountAsync(_context.Enrollments);
+            var classes     = await _executor.CountAsync(_context.Classes.Where(c => c.Status == ClassStatus.Approved));
 
             return Result<PlatformStatsDto>.Ok(new PlatformStatsDto
             {
@@ -259,7 +256,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<AdminStudentDto>>> GetAllStudentsAsync()
         {
             var students    = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
-            var enrollments = (await _unitOfWork.Repository<Enrollment>().GetAllAsync()).ToList();
+            var enrollments = await _executor.ToListAsync(_context.Enrollments);
 
             var dtos = students.Select(s => new AdminStudentDto
             {
@@ -268,7 +265,7 @@ namespace EliteAcademy.Application.Services
                 Email           = s.Email,
                 EnrollmentCount = enrollments.Count(e => e.StudentId == s.Id),
                 IsBanned        = s.IsBanned,
-                JoinedAt        = DateTime.UtcNow   // Identity does not expose CreatedAt; approximate
+                JoinedAt        = DateTime.UtcNow
             }).ToList();
 
             return Result<List<AdminStudentDto>>.Ok(dtos);
@@ -310,17 +307,16 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<AdminClassEnrollmentsDto>> GetClassEnrollmentsAsync(int classId)
         {
-            var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(classId);
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
             if (cls == null)
                 return Result<AdminClassEnrollmentsDto>.Fail("Class not found.");
 
-            var allUsers    = (await _userManager.GetAllUsersAsync()).ToDictionary(u => u.Id ?? "");
+            var allUsers = (await _userManager.GetAllUsersAsync()).ToDictionary(u => u.Id ?? "");
             var instructorName = allUsers.TryGetValue(cls.InstructorId ?? "", out var inst)
                 ? $"{inst.FirstName} {inst.LastName}".Trim()
                 : "Unknown";
 
-            var enrollments = (await _unitOfWork.Repository<Enrollment>()
-                .Where(e => e.ClassId == classId)).ToList();
+            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == classId));
 
             var rows = enrollments.Select(e =>
             {
@@ -349,23 +345,19 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<RevenueReportDto>> GetRevenueReportAsync(int year)
         {
-            var transactions = (await _unitOfWork.Repository<PaymentTransaction>()
-                .Where(t => t.Status == PaymentTransactionStatus.Success
-                         && t.CreatedAt.Year == year)).ToList();
+            var transactions = await _executor.ToListAsync(_context.PaymentTransactions.Where(
+                t => t.Status == PaymentTransactionStatus.Success && t.CreatedAt.Year == year));
 
             var preEnrollmentIds = transactions.Select(t => t.PreEnrollmentId).Distinct().ToList();
-            var preEnrollments   = (await _unitOfWork.Repository<PreEnrollment>()
-                .Where(p => preEnrollmentIds.Contains(p.Id))).ToList();
+            var preEnrollments   = await _executor.ToListAsync(_context.PreEnrollments.Where(p => preEnrollmentIds.Contains(p.Id)));
 
             var classIds = preEnrollments.Select(p => p.ClassId).Distinct().ToList();
-            var classes  = (await _unitOfWork.Repository<Class>()
-                .Where(c => classIds.Contains(c.Id))).ToList();
+            var classes  = await _executor.ToListAsync(_context.Classes.Where(c => classIds.Contains(c.Id)));
 
-            var allUsers       = (await _userManager.GetAllUsersAsync()).ToDictionary(u => u.Id ?? "");
-            var classMap       = classes.ToDictionary(c => c.Id);
-            var preEnrollMap   = preEnrollments.ToDictionary(p => p.Id);
+            var allUsers     = (await _userManager.GetAllUsersAsync()).ToDictionary(u => u.Id ?? "");
+            var classMap     = classes.ToDictionary(c => c.Id);
+            var preEnrollMap = preEnrollments.ToDictionary(p => p.Id);
 
-            // By month
             var byMonth = Enumerable.Range(1, 12).Select(m =>
             {
                 var monthTx = transactions.Where(t => t.CreatedAt.Month == m).ToList();
@@ -378,7 +370,6 @@ namespace EliteAcademy.Application.Services
                 };
             }).ToList();
 
-            // By class
             var byClass = transactions
                 .GroupBy(t =>
                 {
@@ -400,7 +391,6 @@ namespace EliteAcademy.Application.Services
                 .OrderByDescending(x => x.Revenue)
                 .ToList();
 
-            // By instructor
             var byInstructor = transactions
                 .GroupBy(t =>
                 {

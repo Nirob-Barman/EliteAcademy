@@ -1,8 +1,8 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.InstructorApplication;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Email;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
@@ -13,20 +13,23 @@ namespace EliteAcademy.Application.Services
 {
     public class InstructorApplicationService : IInstructorApplicationService
     {
-        private readonly IUnitOfWork          _unitOfWork;
-        private readonly IUserContextService  _userContextService;
-        private readonly IUserManager         _userManager;
-        private readonly INotificationService _notificationService;
-        private readonly IEmailService        _emailService;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor   _executor;
+        private readonly IUserContextService   _userContextService;
+        private readonly IUserManager          _userManager;
+        private readonly INotificationService  _notificationService;
+        private readonly IEmailService         _emailService;
 
         public InstructorApplicationService(
-            IUnitOfWork          unitOfWork,
-            IUserContextService  userContextService,
-            IUserManager         userManager,
-            INotificationService notificationService,
-            IEmailService        emailService)
+            IApplicationDbContext context,
+            IAsyncQueryExecutor   executor,
+            IUserContextService   userContextService,
+            IUserManager          userManager,
+            INotificationService  notificationService,
+            IEmailService         emailService)
         {
-            _unitOfWork          = unitOfWork;
+            _context             = context;
+            _executor            = executor;
             _userContextService  = userContextService;
             _userManager         = userManager;
             _notificationService = notificationService;
@@ -43,15 +46,13 @@ namespace EliteAcademy.Application.Services
             if (user == null)
                 return Result<InstructorApplicationDto>.Fail("User not found.");
 
-            // Block if already an Instructor
             if (await _userManager.IsUserInRoleAsync(user, "Instructor"))
                 return Result<InstructorApplicationDto>.Fail("You are already an instructor.");
 
-            // Block if a Pending or Approved application already exists
-            var existing = await _unitOfWork.Repository<InstructorApplication>()
-                .FirstOrDefaultAsync(a => a.ApplicantId == userId
-                    && (a.Status == InstructorApplicationStatus.Pending
-                     || a.Status == InstructorApplicationStatus.Approved));
+            var existing = await _executor.FirstOrDefaultAsync(_context.InstructorApplications.Where(
+                a => a.ApplicantId == userId
+                  && (a.Status == InstructorApplicationStatus.Pending
+                   || a.Status == InstructorApplicationStatus.Approved)));
 
             if (existing != null)
             {
@@ -74,8 +75,8 @@ namespace EliteAcademy.Application.Services
                 CreatedAt   = DateTime.UtcNow
             };
 
-            await _unitOfWork.Repository<InstructorApplication>().AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Add(entity);
+            await _context.SaveChangesAsync();
 
             return Result<InstructorApplicationDto>.Ok(
                 InstructorApplicationMapper.ToDto(entity),
@@ -88,10 +89,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<InstructorApplicationDto?>.Ok(null);
 
-            // Return the most recent application
-            var apps = await _unitOfWork.Repository<InstructorApplication>()
-                .Where(a => a.ApplicantId == userId);
-
+            var apps = await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.ApplicantId == userId));
             var latest = apps.OrderByDescending(a => a.CreatedAt).FirstOrDefault();
             return Result<InstructorApplicationDto?>.Ok(
                 latest != null ? InstructorApplicationMapper.ToDto(latest) : null);
@@ -99,7 +97,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<InstructorApplicationDto>>> GetAllAsync()
         {
-            var apps = (await _unitOfWork.Repository<InstructorApplication>().GetAllAsync())
+            var apps = (await _executor.ToListAsync(_context.InstructorApplications))
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(InstructorApplicationMapper.ToDto)
                 .ToList();
@@ -109,8 +107,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<InstructorApplicationDto>>> GetPendingAsync()
         {
-            var apps = (await _unitOfWork.Repository<InstructorApplication>()
-                .Where(a => a.Status == InstructorApplicationStatus.Pending))
+            var apps = (await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.Status == InstructorApplicationStatus.Pending)))
                 .OrderBy(a => a.CreatedAt)
                 .Select(InstructorApplicationMapper.ToDto)
                 .ToList();
@@ -120,14 +117,13 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> ApproveAsync(int applicationId)
         {
-            var app = await _unitOfWork.Repository<InstructorApplication>().GetByIdAsync(applicationId);
+            var app = await _executor.FirstOrDefaultAsync(_context.InstructorApplications.Where(a => a.Id == applicationId));
             if (app == null)
                 return Result<bool>.Fail("Application not found.");
 
             if (app.Status != InstructorApplicationStatus.Pending)
                 return Result<bool>.Fail("Only pending applications can be approved.");
 
-            // Change role
             var user = await _userManager.FindByIdAsync(app.ApplicantId!);
             if (user == null)
                 return Result<bool>.Fail("Applicant account not found.");
@@ -140,21 +136,17 @@ namespace EliteAcademy.Application.Services
             if (!addResult.Succeeded)
                 return Result<bool>.Fail(addResult.Errors.FirstOrDefault() ?? "Failed to assign Instructor role.");
 
-            // Update application record
             app.Status     = InstructorApplicationStatus.Approved;
             app.ReviewedAt = DateTime.UtcNow;
             app.UpdatedAt  = DateTime.UtcNow;
-            _unitOfWork.Repository<InstructorApplication>().Update(app);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-            // In-app notification
             await _notificationService.CreateAsync(
                 app.ApplicantId!,
                 "Instructor Application Approved",
                 "Congratulations! Your instructor application has been approved. You can now create classes.",
                 "/Instructor/Dashboard");
 
-            // Email
             try
             {
                 if (!string.IsNullOrWhiteSpace(app.Email))
@@ -184,7 +176,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(adminNotes))
                 return Result<bool>.Fail("A reason is required when rejecting an application.");
 
-            var app = await _unitOfWork.Repository<InstructorApplication>().GetByIdAsync(applicationId);
+            var app = await _executor.FirstOrDefaultAsync(_context.InstructorApplications.Where(a => a.Id == applicationId));
             if (app == null)
                 return Result<bool>.Fail("Application not found.");
 
@@ -195,17 +187,14 @@ namespace EliteAcademy.Application.Services
             app.AdminNotes = adminNotes;
             app.ReviewedAt = DateTime.UtcNow;
             app.UpdatedAt  = DateTime.UtcNow;
-            _unitOfWork.Repository<InstructorApplication>().Update(app);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-            // In-app notification
             await _notificationService.CreateAsync(
                 app.ApplicantId!,
                 "Instructor Application Update",
                 $"Your instructor application was not approved. Reason: {adminNotes}",
                 "/InstructorApplication/MyApplication");
 
-            // Email
             try
             {
                 if (!string.IsNullOrWhiteSpace(app.Email))

@@ -1,7 +1,7 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Class;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
@@ -12,27 +12,29 @@ namespace EliteAcademy.Application.Services
 {
     public class ClassService : IClassService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserManager _userManager;
         private readonly IUserContextService _userContextService;
         private readonly IFileStorage _fileStorage;
 
         public ClassService(
-            IUnitOfWork unitOfWork,
+            IApplicationDbContext context,
+            IAsyncQueryExecutor executor,
             IUserManager userManager,
             IUserContextService userContextService,
             IFileStorage fileStorage)
         {
-            _unitOfWork = unitOfWork;
-            _userManager = userManager;
+            _context            = context;
+            _executor           = executor;
+            _userManager        = userManager;
             _userContextService = userContextService;
-            _fileStorage = fileStorage;
+            _fileStorage        = fileStorage;
         }
 
         public async Task<Result<List<ClassDto>>> GetApprovedAsync()
         {
-            var classes = await _unitOfWork.Repository<Class>()
-                .Where(c => c.Status == ClassStatus.Approved);
+            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.Status == ClassStatus.Approved));
 
             var users = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(
@@ -40,8 +42,7 @@ namespace EliteAcademy.Application.Services
                 u => $"{u.FirstName} {u.LastName}".Trim());
 
             var dtos = classes
-                .Select(c => ClassMapper.ToDto(c,
-                    instructorMap.GetValueOrDefault(c.InstructorId ?? "")))
+                .Select(c => ClassMapper.ToDto(c, instructorMap.GetValueOrDefault(c.InstructorId ?? "")))
                 .ToList();
 
             return Result<List<ClassDto>>.Ok(dtos);
@@ -53,8 +54,7 @@ namespace EliteAcademy.Application.Services
             var user = await _userManager.FindByIdAsync(instructorId);
             var instructorName = user == null ? "" : $"{user.FirstName} {user.LastName}".Trim();
 
-            var classes = await _unitOfWork.Repository<Class>()
-                .Where(c => c.InstructorId == instructorId);
+            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId));
 
             var dtos = classes
                 .Select(c => ClassMapper.ToDto(c, instructorName))
@@ -65,7 +65,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<ClassDto>> GetByIdAsync(int id)
         {
-            var entity = await _unitOfWork.Repository<Class>().GetByIdAsync(id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == id));
             if (entity == null)
                 return Result<ClassDto>.Fail("Class not found.");
 
@@ -81,27 +81,27 @@ namespace EliteAcademy.Application.Services
         {
             var entity = new Class
             {
-                ClassName     = dto.ClassName,
+                ClassName      = dto.ClassName,
                 AvailableSeats = dto.AvailableSeats,
-                Price         = dto.Price,
-                InstructorId  = _userContextService.UserId,
-                Status        = ClassStatus.Pending,
-                CreatedBy     = _userContextService.UserId,
-                CreatedAt     = DateTime.UtcNow
+                Price          = dto.Price,
+                InstructorId   = _userContextService.UserId,
+                Status         = ClassStatus.Pending,
+                CreatedBy      = _userContextService.UserId,
+                CreatedAt      = DateTime.UtcNow
             };
 
             if (imageStream != null && !string.IsNullOrWhiteSpace(imageFileName))
                 entity.ClassImage = await _fileStorage.UploadFileAsync(imageStream, imageFileName, "uploads/classes");
 
-            await _unitOfWork.Repository<Class>().AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Add(entity);
+            await _context.SaveChangesAsync();
 
             return Result<int>.Ok(entity.Id, "Class submitted for approval.");
         }
 
         public async Task<Result<bool>> UpdateAsync(ClassFormDto dto, Stream? imageStream, string? imageFileName)
         {
-            var entity = await _unitOfWork.Repository<Class>().GetByIdAsync(dto.Id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == dto.Id));
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 
@@ -122,8 +122,7 @@ namespace EliteAcademy.Application.Services
                 entity.ClassImage = await _fileStorage.UploadFileAsync(imageStream, imageFileName, "uploads/classes");
             }
 
-            _unitOfWork.Repository<Class>().Update(entity);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Class updated.");
         }

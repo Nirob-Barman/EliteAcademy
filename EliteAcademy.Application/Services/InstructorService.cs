@@ -1,7 +1,7 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Instructor;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
@@ -14,21 +14,24 @@ namespace EliteAcademy.Application.Services
 {
     public class InstructorService : IInstructorService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserManager _userManager;
         private readonly IUserContextService _userContextService;
         private readonly IFileStorage _fileStorage;
 
         public InstructorService(
-            IUnitOfWork unitOfWork,
+            IApplicationDbContext context,
+            IAsyncQueryExecutor executor,
             IUserManager userManager,
             IUserContextService userContextService,
             IFileStorage fileStorage)
         {
-            _unitOfWork = unitOfWork;
-            _userManager = userManager;
+            _context            = context;
+            _executor           = executor;
+            _userManager        = userManager;
             _userContextService = userContextService;
-            _fileStorage = fileStorage;
+            _fileStorage        = fileStorage;
         }
 
         public async Task<Result<InstructorProfileDto>> GetProfileAsync()
@@ -48,7 +51,7 @@ namespace EliteAcademy.Application.Services
                 return Result<bool>.Fail("User not found.");
 
             user.FirstName = dto.FirstName;
-            user.LastName = dto.LastName;
+            user.LastName  = dto.LastName;
 
             if (imageStream != null && !string.IsNullOrWhiteSpace(imageFileName))
             {
@@ -68,18 +71,16 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<InstructorDashboardDto>> GetDashboardAsync()
         {
             var instructorId = _userContextService.UserId!;
-            var classes = (await _unitOfWork.Repository<Class>()
-                .Where(c => c.InstructorId == instructorId)).ToList();
+            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId));
 
             var classIds = classes.Select(c => c.Id).ToHashSet();
 
             var enrollments = classIds.Any()
-                ? (await _unitOfWork.Repository<Enrollment>().Where(e => classIds.Contains(e.ClassId))).ToList()
+                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)))
                 : new List<Enrollment>();
 
             var paidPreEnrollments = classIds.Any()
-                ? (await _unitOfWork.Repository<PreEnrollment>()
-                    .Where(p => classIds.Contains(p.ClassId) && p.PaymentStatus == PaymentStatus.Paid)).ToList()
+                ? await _executor.ToListAsync(_context.PreEnrollments.Where(p => classIds.Contains(p.ClassId) && p.PaymentStatus == PaymentStatus.Paid))
                 : new List<PreEnrollment>();
 
             var totalRevenue = paidPreEnrollments
@@ -89,7 +90,6 @@ namespace EliteAcademy.Application.Services
                     return (cls?.Price ?? 0) - p.DiscountAmount;
                 });
 
-            // Fill all 12 calendar months, computing revenue per month
             var allMonths = new List<MonthlyRevenueItem>();
             for (int i = 11; i >= 0; i--)
             {
@@ -129,12 +129,11 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<ClassStudentDto>>> GetClassStudentsAsync(int classId)
         {
             var instructorId = _userContextService.UserId!;
-            var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(classId);
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
             if (cls == null || cls.InstructorId != instructorId)
                 return Result<List<ClassStudentDto>>.Fail("Class not found.");
 
-            var enrollments = (await _unitOfWork.Repository<Enrollment>()
-                .Where(e => e.ClassId == classId)).ToList();
+            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == classId));
 
             var users = await _userManager.GetAllUsersAsync();
             var userMap = users.ToDictionary(u => u.Id ?? "", u => u);
@@ -159,21 +158,18 @@ namespace EliteAcademy.Application.Services
             var instructors = (await _userManager.GetUsersByRoleAsync("Instructor")).ToList();
             var instructorIds = instructors.Select(u => u.Id ?? "").ToHashSet();
 
-            var allClasses = (await _unitOfWork.Repository<Class>()
-                .Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId ?? "")))
-                .ToList();
+            var allClasses = await _executor.ToListAsync(
+                _context.Classes.Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId ?? "")));
 
             var classIds = allClasses.Select(c => c.Id).ToHashSet();
             var allEnrollments = classIds.Any()
-                ? (await _unitOfWork.Repository<Enrollment>().Where(e => classIds.Contains(e.ClassId))).ToList()
+                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)))
                 : new List<Enrollment>();
 
-            // class count per instructor
             var classCountMap = allClasses
                 .GroupBy(c => c.InstructorId ?? "")
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            // distinct student count per instructor
             var studentCountMap = allClasses
                 .GroupBy(c => c.InstructorId ?? "")
                 .ToDictionary(

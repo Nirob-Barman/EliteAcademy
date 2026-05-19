@@ -1,6 +1,6 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Instructor;
 using EliteAcademy.Application.Interfaces;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Instructor;
@@ -11,24 +11,27 @@ namespace EliteAcademy.Application.Services
 {
     public class AnnouncementService : IAnnouncementService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserContextService _userContextService;
         private readonly INotificationService _notificationService;
 
         public AnnouncementService(
-            IUnitOfWork unitOfWork,
+            IApplicationDbContext context,
+            IAsyncQueryExecutor executor,
             IUserContextService userContextService,
             INotificationService notificationService)
         {
-            _unitOfWork          = unitOfWork;
+            _context             = context;
+            _executor            = executor;
             _userContextService  = userContextService;
             _notificationService = notificationService;
         }
 
         public async Task<Result<List<AnnouncementDto>>> GetClassAnnouncementsAsync(int classId)
         {
-            var items = (await _unitOfWork.Repository<Announcement>()
-                .Where(a => a.ClassId == classId))
+            var items = await _executor.ToListAsync(_context.Announcements
+                .Where(a => a.ClassId == classId)
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(a => new AnnouncementDto
                 {
@@ -37,7 +40,7 @@ namespace EliteAcademy.Application.Services
                     Title     = a.Title,
                     Body      = a.Body,
                     CreatedAt = a.CreatedAt
-                }).ToList();
+                }));
 
             return Result<List<AnnouncementDto>>.Ok(items);
         }
@@ -49,8 +52,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(dto.Title))
                 return Result<bool>.FailField("Title", "Title is required.");
 
-            // Verify instructor owns the class
-            var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(dto.ClassId);
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == dto.ClassId));
             if (cls == null || cls.InstructorId != instructorId)
                 return Result<bool>.Fail("Class not found.");
             if (cls.Status != ClassStatus.Approved)
@@ -64,13 +66,10 @@ namespace EliteAcademy.Application.Services
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = instructorId
             };
-            await _unitOfWork.Repository<Announcement>().AddAsync(announcement);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Add(announcement);
+            await _context.SaveChangesAsync();
 
-            // Notify all enrolled students
-            var enrollments = (await _unitOfWork.Repository<Enrollment>()
-                .Where(e => e.ClassId == dto.ClassId)).ToList();
-
+            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == dto.ClassId));
             foreach (var enrollment in enrollments)
             {
                 if (!string.IsNullOrWhiteSpace(enrollment.StudentId))
@@ -89,16 +88,16 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> DeleteAsync(int id)
         {
             var instructorId = _userContextService.UserId!;
-            var entity = await _unitOfWork.Repository<Announcement>().GetByIdAsync(id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.Announcements.Where(a => a.Id == id));
             if (entity == null)
                 return Result<bool>.Fail("Announcement not found.");
 
-            var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(entity.ClassId);
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == entity.ClassId));
             if (cls?.InstructorId != instructorId)
                 return Result<bool>.Fail("Not authorized.");
 
-            _unitOfWork.Repository<Announcement>().Remove(entity);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Remove(entity);
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Announcement deleted.");
         }

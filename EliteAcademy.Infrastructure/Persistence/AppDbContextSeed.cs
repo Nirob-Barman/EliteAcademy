@@ -88,7 +88,7 @@ namespace EliteAcademy.Infrastructure.Persistence
                 if (instructor == null)
                     continue;
 
-                db.Classes.Add(new Class
+                db.Add(new Class
                 {
                     ClassName = c.Name,
                     AvailableSeats = c.Seats,

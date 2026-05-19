@@ -2,7 +2,8 @@
 using Microsoft.EntityFrameworkCore.Storage;
 namespace EliteAcademy.Infrastructure.Persistence.Repositories
 {
-    public class UnitOfWork : IUnitOfWork
+    //public class UnitOfWork : IUnitOfWork
+    public class UnitOfWork
     {
         private readonly ApplicationDbContext _context;
         private readonly Dictionary<Type, object> _repositories = new();

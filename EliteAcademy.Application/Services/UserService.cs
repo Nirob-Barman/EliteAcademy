@@ -1,9 +1,9 @@
-﻿using EliteAcademy.Application.DTOs.Account;
+using EliteAcademy.Application.Common.Interfaces;
+using EliteAcademy.Application.DTOs.Account;
 using EliteAcademy.Application.DTOs.Identity;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Email;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Account;
@@ -12,17 +12,18 @@ namespace EliteAcademy.Application.Services
 {
     public class UserService : IUserService
     {
-        private readonly IUserManager _userManager;
-        private readonly ISignInManager _signInManager;
-        private readonly IRoleManager _roleManager;
-        private readonly IEmailService _emailService;
-        private readonly IFileStorage _fileStorage;
-        private readonly IUserContextService _userContextService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserManager         _userManager;
+        private readonly ISignInManager       _signInManager;
+        private readonly IRoleManager         _roleManager;
+        private readonly IEmailService        _emailService;
+        private readonly IFileStorage         _fileStorage;
+        private readonly IUserContextService  _userContextService;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor  _executor;
 
         public UserService(IUserManager userManager, ISignInManager signInManager, IRoleManager roleManager,
             IEmailService emailService, IFileStorage fileStorage, IUserContextService userContextService,
-            IUnitOfWork unitOfWork)
+            IApplicationDbContext context, IAsyncQueryExecutor executor)
         {
             _userManager        = userManager;
             _signInManager      = signInManager;
@@ -30,7 +31,8 @@ namespace EliteAcademy.Application.Services
             _emailService       = emailService;
             _fileStorage        = fileStorage;
             _userContextService = userContextService;
-            _unitOfWork         = unitOfWork;
+            _context            = context;
+            _executor           = executor;
         }
 
 
@@ -41,12 +43,12 @@ namespace EliteAcademy.Application.Services
 
             var user = new AppUser
             {
-                FirstName = model.FirstName,
-                LastName = model.LastName,
-                Email = model.Email,
+                FirstName   = model.FirstName,
+                LastName    = model.LastName,
+                Email       = model.Email,
                 PhoneNumber = model.PhoneNumber,
-                Address = model.Address,
-                Gender = model.Gender,
+                Address     = model.Address,
+                Gender      = model.Gender,
                 DateOfBirth = model.DateOfBirth
             };
 
@@ -62,23 +64,19 @@ namespace EliteAcademy.Application.Services
                 foreach (var error in errors ?? new List<string>())
                 {
                     if (error.Contains("email", StringComparison.OrdinalIgnoreCase))
-                    {
                         fieldErrors[nameof(model.Email)] = error;
-                    }
                     else if (error.Contains("password", StringComparison.OrdinalIgnoreCase))
-                    {
                         fieldErrors[nameof(model.Password)] = error;
-                    }
                 }
 
                 if (fieldErrors.Count > 0)
                 {
                     return new Result<string>
                     {
-                        Success = false,
+                        Success     = false,
                         FieldErrors = fieldErrors,
-                        Errors = errors,
-                        Message = "Registration failed"
+                        Errors      = errors,
+                        Message     = "Registration failed"
                     };
                 }
 
@@ -124,7 +122,7 @@ namespace EliteAcademy.Application.Services
 
         private async Task RecordLoginAuditAsync(string? userId, bool success, string? errorMessage)
         {
-            await _unitOfWork.Repository<LoginAudit>().AddAsync(new LoginAudit
+            _context.Add(new LoginAudit
             {
                 Id           = Guid.NewGuid(),
                 UserId       = userId,
@@ -134,7 +132,7 @@ namespace EliteAcademy.Application.Services
                 IsSuccessful = success,
                 ErrorMessage = errorMessage
             });
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Result<List<LoginHistoryItemDto>>> GetMyLoginHistoryAsync()
@@ -143,20 +141,21 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<List<LoginHistoryItemDto>>.Fail("User not authenticated.");
 
-            var records = await _unitOfWork.Repository<LoginAudit>()
-                .GetAllAsync(
-                    x => x.UserId == userId,
-                    x => new LoginHistoryItemDto
+            var records = await _executor.ToListAsync(
+                _context.LoginAudits
+                    .Where(x => x.UserId == userId)
+                    .OrderByDescending(x => x.LoginTime)
+                    .Take(50)
+                    .Select(x => new LoginHistoryItemDto
                     {
                         LoginTime    = x.LoginTime,
                         IPAddress    = x.IPAddress,
                         UserAgent    = x.UserAgent,
                         IsSuccessful = x.IsSuccessful,
                         ErrorMessage = x.ErrorMessage
-                    });
+                    }));
 
-            var sorted = records.OrderByDescending(x => x.LoginTime).Take(50).ToList();
-            return Result<List<LoginHistoryItemDto>>.Ok(sorted);
+            return Result<List<LoginHistoryItemDto>>.Ok(records);
         }
 
 
@@ -265,7 +264,7 @@ namespace EliteAcademy.Application.Services
 
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
-                return Result<bool>.Ok(true); // silent — don't reveal if email exists
+                return Result<bool>.Ok(true);
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
@@ -355,9 +354,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> ResetPasswordAsync(string email, string token, string newPassword)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
-            {
                 return Result<bool>.Fail("Email, token, and new password are required.");
-            }
 
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
@@ -365,9 +362,7 @@ namespace EliteAcademy.Application.Services
 
             var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
             if (!result.Succeeded)
-            {
                 return Result<bool>.Fail(result.Errors, "Password reset failed.");
-            }
 
             return Result<bool>.Ok(true, "Password has been reset successfully.");
         }
@@ -385,21 +380,15 @@ namespace EliteAcademy.Application.Services
             if (user == null)
                 return Result<bool>.Fail("User not found.");
 
-            // Remove existing roles
             var existingRoles = await _userManager.GetRolesAsync(user);
             var removalResult = await _userManager.RemoveFromRoleAsync(user, existingRoles.FirstOrDefault()!);
 
             if (!removalResult.Succeeded)
-            {
                 return Result<bool>.Fail(removalResult.Errors, "Failed to remove existing roles.");
-            }
 
-            // Add new role
             var addResult = await _userManager.AddToRoleAsync(user, roleName);
             if (!addResult.Succeeded)
-            {
                 return Result<bool>.Fail(addResult.Errors, "Failed to assign new role.");
-            }
 
             return Result<bool>.Ok(true, $"Role '{roleName}' assigned successfully.");
         }
@@ -410,7 +399,6 @@ namespace EliteAcademy.Application.Services
             try
             {
                 var roles = await _roleManager.GetAllRolesAsync(excludeAdmin: true);
-
                 return Result<List<string>>.Ok(roles);
             }
             catch (Exception ex)
@@ -466,9 +454,7 @@ namespace EliteAcademy.Application.Services
             var result = await _roleManager.CreateRoleAsync(roleName);
 
             if (!result.Succeeded)
-            {
                 return Result<bool>.Fail(result.Errors, "Failed to create role.");
-            }
 
             return Result<bool>.Ok(true, $"Role '{roleName}' created successfully.");
         }

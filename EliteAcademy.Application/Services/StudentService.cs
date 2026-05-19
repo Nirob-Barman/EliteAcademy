@@ -1,7 +1,7 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Student;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
@@ -14,20 +14,23 @@ namespace EliteAcademy.Application.Services
 {
     public class StudentService : IStudentService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IUserManager _userManager;
-        private readonly IUserContextService _userContextService;
-        private readonly IFileStorage _fileStorage;
-        private readonly INotificationService _notificationService;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor   _executor;
+        private readonly IUserManager          _userManager;
+        private readonly IUserContextService   _userContextService;
+        private readonly IFileStorage          _fileStorage;
+        private readonly INotificationService  _notificationService;
 
         public StudentService(
-            IUnitOfWork unitOfWork,
-            IUserManager userManager,
-            IUserContextService userContextService,
-            IFileStorage fileStorage,
-            INotificationService notificationService)
+            IApplicationDbContext context,
+            IAsyncQueryExecutor   executor,
+            IUserManager          userManager,
+            IUserContextService   userContextService,
+            IFileStorage          fileStorage,
+            INotificationService  notificationService)
         {
-            _unitOfWork          = unitOfWork;
+            _context             = context;
+            _executor            = executor;
             _userManager         = userManager;
             _userContextService  = userContextService;
             _fileStorage         = fileStorage;
@@ -38,14 +41,10 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            var selectedCount  = await _unitOfWork.Repository<PreEnrollment>()
-                .CountAsync(p => p.StudentId == studentId && p.PaymentStatus == PaymentStatus.Pending);
-            var enrolledCount  = await _unitOfWork.Repository<Enrollment>()
-                .CountAsync(e => e.StudentId == studentId);
-            var availableCount = await _unitOfWork.Repository<Class>()
-                .CountAsync(c => c.Status == ClassStatus.Approved);
-            var wishlistCount  = await _unitOfWork.Repository<Wishlist>()
-                .CountAsync(w => w.StudentId == studentId);
+            var selectedCount  = await _executor.CountAsync(_context.PreEnrollments.Where(p => p.StudentId == studentId && p.PaymentStatus == PaymentStatus.Pending));
+            var enrolledCount  = await _executor.CountAsync(_context.Enrollments.Where(e => e.StudentId == studentId));
+            var availableCount = await _executor.CountAsync(_context.Classes.Where(c => c.Status == ClassStatus.Approved));
+            var wishlistCount  = await _executor.CountAsync(_context.Wishlists.Where(w => w.StudentId == studentId));
 
             return Result<StudentDashboardDto>.Ok(new StudentDashboardDto
             {
@@ -60,9 +59,8 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            var preEnrollments = (await _unitOfWork.Repository<PreEnrollment>()
-                .Where(p => p.StudentId == studentId && p.PaymentStatus == PaymentStatus.Pending))
-                .ToList();
+            var preEnrollments = await _executor.ToListAsync(
+                _context.PreEnrollments.Where(p => p.StudentId == studentId && p.PaymentStatus == PaymentStatus.Pending));
 
             var users = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(u => u.Id ?? "", u => $"{u.FirstName} {u.LastName}".Trim());
@@ -70,7 +68,7 @@ namespace EliteAcademy.Application.Services
             var dtos = new List<PreEnrollmentDto>();
             foreach (var pe in preEnrollments)
             {
-                var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(pe.ClassId);
+                var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == pe.ClassId));
                 var instructorName = cls?.InstructorId != null
                     ? instructorMap.GetValueOrDefault(cls.InstructorId, "")
                     : "";
@@ -84,7 +82,7 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(classId);
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
             if (cls == null)
                 return Result<bool>.Fail("Class not found.");
             if (cls.Status != ClassStatus.Approved)
@@ -92,17 +90,13 @@ namespace EliteAcademy.Application.Services
             if (cls.AvailableSeats <= 0)
                 return Result<bool>.Fail("No available seats.");
 
-            var alreadySelected = await _unitOfWork.Repository<PreEnrollment>()
-                .AnyAsync(p => p.StudentId == studentId && p.ClassId == classId && p.PaymentStatus == PaymentStatus.Pending);
-            if (alreadySelected)
+            if (await _executor.AnyAsync(_context.PreEnrollments.Where(p => p.StudentId == studentId && p.ClassId == classId && p.PaymentStatus == PaymentStatus.Pending)))
                 return Result<bool>.Fail("Class is already in your selections.");
 
-            var alreadyEnrolled = await _unitOfWork.Repository<Enrollment>()
-                .AnyAsync(e => e.StudentId == studentId && e.ClassId == classId);
-            if (alreadyEnrolled)
+            if (await _executor.AnyAsync(_context.Enrollments.Where(e => e.StudentId == studentId && e.ClassId == classId)))
                 return Result<bool>.Fail("You are already enrolled in this class.");
 
-            await _unitOfWork.Repository<PreEnrollment>().AddAsync(new PreEnrollment
+            _context.Add(new PreEnrollment
             {
                 ClassId       = classId,
                 StudentId     = studentId,
@@ -110,15 +104,15 @@ namespace EliteAcademy.Application.Services
                 CreatedAt     = DateTime.UtcNow,
                 CreatedBy     = studentId
             });
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Class added to selections.");
         }
 
         public async Task<Result<bool>> DeleteSelectedClassAsync(int preEnrollmentId)
         {
-            var studentId    = _userContextService.UserId!;
-            var preEnrollment = await _unitOfWork.Repository<PreEnrollment>().GetByIdAsync(preEnrollmentId);
+            var studentId     = _userContextService.UserId!;
+            var preEnrollment = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == preEnrollmentId));
             if (preEnrollment == null)
                 return Result<bool>.Fail("Selection not found.");
             if (preEnrollment.StudentId != studentId)
@@ -126,16 +120,16 @@ namespace EliteAcademy.Application.Services
             if (preEnrollment.PaymentStatus != PaymentStatus.Pending)
                 return Result<bool>.Fail("Cannot remove a paid selection.");
 
-            _unitOfWork.Repository<PreEnrollment>().Remove(preEnrollment);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Remove(preEnrollment);
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Selection removed.");
         }
 
         public async Task<Result<bool>> PayForClassAsync(int preEnrollmentId)
         {
-            var studentId    = _userContextService.UserId!;
-            var preEnrollment = await _unitOfWork.Repository<PreEnrollment>().GetByIdAsync(preEnrollmentId);
+            var studentId     = _userContextService.UserId!;
+            var preEnrollment = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == preEnrollmentId));
             if (preEnrollment == null)
                 return Result<bool>.Fail("Selection not found.");
             if (preEnrollment.StudentId != studentId)
@@ -143,7 +137,7 @@ namespace EliteAcademy.Application.Services
             if (preEnrollment.PaymentStatus != PaymentStatus.Pending)
                 return Result<bool>.Fail("Already paid.");
 
-            var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(preEnrollment.ClassId);
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == preEnrollment.ClassId));
             if (cls == null)
                 return Result<bool>.Fail("Class not found.");
             if (cls.AvailableSeats <= 0)
@@ -152,9 +146,8 @@ namespace EliteAcademy.Application.Services
             preEnrollment.PaymentStatus = PaymentStatus.Paid;
             preEnrollment.UpdatedAt     = DateTime.UtcNow;
             preEnrollment.UpdatedBy     = studentId;
-            _unitOfWork.Repository<PreEnrollment>().Update(preEnrollment);
 
-            await _unitOfWork.Repository<Enrollment>().AddAsync(new Enrollment
+            _context.Add(new Enrollment
             {
                 ClassId    = preEnrollment.ClassId,
                 StudentId  = studentId,
@@ -166,23 +159,19 @@ namespace EliteAcademy.Application.Services
             cls.AvailableSeats--;
             cls.UpdatedAt = DateTime.UtcNow;
             cls.UpdatedBy = studentId;
-            _unitOfWork.Repository<Class>().Update(cls);
 
             if (!string.IsNullOrWhiteSpace(preEnrollment.CouponCode))
             {
-                var coupon = await _unitOfWork.Repository<Coupon>()
-                    .FirstOrDefaultAsync(c => c.Code == preEnrollment.CouponCode);
+                var coupon = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Code == preEnrollment.CouponCode));
                 if (coupon != null)
                 {
                     coupon.UsageCount++;
                     coupon.UpdatedAt = DateTime.UtcNow;
-                    _unitOfWork.Repository<Coupon>().Update(coupon);
                 }
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-            // Notify the instructor
             if (!string.IsNullOrWhiteSpace(cls.InstructorId))
             {
                 var student = await _userManager.FindByIdAsync(studentId);
@@ -201,9 +190,7 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            var enrollments = (await _unitOfWork.Repository<Enrollment>()
-                .Where(e => e.StudentId == studentId))
-                .ToList();
+            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.StudentId == studentId));
 
             var users = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(u => u.Id ?? "", u => $"{u.FirstName} {u.LastName}".Trim());
@@ -211,7 +198,7 @@ namespace EliteAcademy.Application.Services
             var dtos = new List<EnrollmentDto>();
             foreach (var enrollment in enrollments)
             {
-                var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(enrollment.ClassId);
+                var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == enrollment.ClassId));
                 var instructorName = cls?.InstructorId != null
                     ? instructorMap.GetValueOrDefault(cls.InstructorId, "")
                     : "";
@@ -225,13 +212,12 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            var selectedIds = (await _unitOfWork.Repository<PreEnrollment>()
-                .Where(p => p.StudentId == studentId && p.PaymentStatus == PaymentStatus.Pending))
+            var selectedIds = (await _executor.ToListAsync(
+                    _context.PreEnrollments.Where(p => p.StudentId == studentId && p.PaymentStatus == PaymentStatus.Pending)))
                 .Select(p => p.ClassId)
                 .ToHashSet();
 
-            var enrolledIds = (await _unitOfWork.Repository<Enrollment>()
-                .Where(e => e.StudentId == studentId))
+            var enrolledIds = (await _executor.ToListAsync(_context.Enrollments.Where(e => e.StudentId == studentId)))
                 .Select(e => e.ClassId)
                 .ToHashSet();
 
@@ -282,19 +268,18 @@ namespace EliteAcademy.Application.Services
                 return Result<bool>.Fail("Please enter a coupon code.");
 
             var studentId = _userContextService.UserId!;
-            var pe = await _unitOfWork.Repository<PreEnrollment>().GetByIdAsync(preEnrollmentId);
+            var pe = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == preEnrollmentId));
             if (pe == null || pe.StudentId != studentId)
                 return Result<bool>.Fail("Selection not found.");
             if (pe.PaymentStatus != PaymentStatus.Pending)
                 return Result<bool>.Fail("Cannot apply coupon to a paid selection.");
 
-            var cls = await _unitOfWork.Repository<Class>().GetByIdAsync(pe.ClassId);
+            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == pe.ClassId));
             if (cls == null)
                 return Result<bool>.Fail("Class not found.");
 
             var upper  = couponCode.Trim().ToUpper();
-            var coupon = await _unitOfWork.Repository<Coupon>()
-                .FirstOrDefaultAsync(c => c.Code == upper);
+            var coupon = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Code == upper));
 
             if (coupon == null)
                 return Result<bool>.Fail("Invalid coupon code.");
@@ -310,8 +295,7 @@ namespace EliteAcademy.Application.Services
             pe.UpdatedAt      = DateTime.UtcNow;
             pe.UpdatedBy      = studentId;
 
-            _unitOfWork.Repository<PreEnrollment>().Update(pe);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, $"{coupon.DiscountPercent}% discount applied! You save ${pe.DiscountAmount:0.00}.");
         }
@@ -319,7 +303,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> RemoveCouponAsync(int preEnrollmentId)
         {
             var studentId = _userContextService.UserId!;
-            var pe = await _unitOfWork.Repository<PreEnrollment>().GetByIdAsync(preEnrollmentId);
+            var pe = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == preEnrollmentId));
             if (pe == null || pe.StudentId != studentId)
                 return Result<bool>.Fail("Selection not found.");
             if (pe.PaymentStatus != PaymentStatus.Pending)
@@ -330,8 +314,7 @@ namespace EliteAcademy.Application.Services
             pe.UpdatedAt      = DateTime.UtcNow;
             pe.UpdatedBy      = studentId;
 
-            _unitOfWork.Repository<PreEnrollment>().Update(pe);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Coupon removed.");
         }

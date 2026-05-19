@@ -1,6 +1,6 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Payment;
 using EliteAcademy.Application.Interfaces;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities;
@@ -10,24 +10,27 @@ namespace EliteAcademy.Application.Services
 {
     public class PaymentGatewayService : IPaymentGatewayService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor _executor;
         private readonly IConfigEncryptor _encryptor;
         private readonly IAuditLogService _auditLogService;
 
         public PaymentGatewayService(
-            IUnitOfWork unitOfWork,
+            IApplicationDbContext context,
+            IAsyncQueryExecutor executor,
             IConfigEncryptor encryptor,
             IAuditLogService auditLogService)
         {
-            _unitOfWork      = unitOfWork;
+            _context         = context;
+            _executor        = executor;
             _encryptor       = encryptor;
             _auditLogService = auditLogService;
         }
 
         public async Task<Result<List<PaymentGatewayDto>>> GetAllAsync()
         {
-            var all = (await _unitOfWork.Repository<PaymentGateway>().GetAllAsync()).ToList();
-            var txCounts = (await _unitOfWork.Repository<PaymentTransaction>().GetAllAsync())
+            var all = await _executor.ToListAsync(_context.PaymentGateways);
+            var txCounts = (await _executor.ToListAsync(_context.PaymentTransactions))
                 .GroupBy(t => t.GatewayId)
                 .ToDictionary(g => g.Key, g => g.Count());
 
@@ -47,7 +50,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<PaymentGatewayDto>> GetByIdAsync(int id)
         {
-            var entity = await _unitOfWork.Repository<PaymentGateway>().GetByIdAsync(id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
             if (entity == null)
                 return Result<PaymentGatewayDto>.Fail("Gateway not found.");
 
@@ -64,7 +67,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<string>> GetDecryptedConfigAsync(int id)
         {
-            var entity = await _unitOfWork.Repository<PaymentGateway>().GetByIdAsync(id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
             if (entity == null)
                 return Result<string>.Fail("Gateway not found.");
 
@@ -72,7 +75,6 @@ namespace EliteAcademy.Application.Services
             {
                 var json = _encryptor.Decrypt(entity.Config);
 
-                // Inject sandbox flag so processors always know the mode
                 var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json)
                            ?? new Dictionary<string, string>();
                 dict["_is_sandbox"] = entity.IsSandbox.ToString().ToLower();
@@ -80,7 +82,6 @@ namespace EliteAcademy.Application.Services
             }
             catch
             {
-                // Config may be empty (e.g. mock gateway) — return minimal JSON
                 return Result<string>.Ok(JsonSerializer.Serialize(new Dictionary<string, string>
                 {
                     ["_is_sandbox"] = entity.IsSandbox.ToString().ToLower()
@@ -91,7 +92,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> CreateAsync(PaymentGatewayFormDto dto)
         {
             var slugLower = dto.Slug.Trim().ToLower();
-            if (await _unitOfWork.Repository<PaymentGateway>().AnyAsync(g => g.Slug == slugLower))
+            if (await _executor.AnyAsync(_context.PaymentGateways.Where(g => g.Slug == slugLower)))
                 return Result<bool>.Fail("A gateway with this slug already exists.");
 
             var configJson = string.IsNullOrWhiteSpace(dto.Config) ? "{}" : dto.Config;
@@ -105,8 +106,8 @@ namespace EliteAcademy.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _unitOfWork.Repository<PaymentGateway>().AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Add(entity);
+            await _context.SaveChangesAsync();
 
             await _auditLogService.LogAsync("PaymentGateway", "Create",
                 details: $"Created gateway \"{entity.Name}\" (slug: {entity.Slug})");
@@ -116,16 +117,14 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> UpdateAsync(int id, PaymentGatewayFormDto dto)
         {
-            var entity = await _unitOfWork.Repository<PaymentGateway>().GetByIdAsync(id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
             if (entity == null)
                 return Result<bool>.Fail("Gateway not found.");
 
             var slugLower = dto.Slug.Trim().ToLower();
-            if (await _unitOfWork.Repository<PaymentGateway>().AnyAsync(g => g.Slug == slugLower && g.Id != id))
+            if (await _executor.AnyAsync(_context.PaymentGateways.Where(g => g.Slug == slugLower && g.Id != id)))
                 return Result<bool>.Fail("Another gateway already uses this slug.");
 
-            // Merge incoming config on top of existing decrypted config
-            // (blank secrets are preserved from the stored config)
             string mergedJson;
             try
             {
@@ -155,8 +154,7 @@ namespace EliteAcademy.Application.Services
             entity.IsSandbox = dto.IsSandbox;
             entity.UpdatedAt = DateTime.UtcNow;
 
-            _unitOfWork.Repository<PaymentGateway>().Update(entity);
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             await _auditLogService.LogAsync("PaymentGateway", "Update",
                 details: $"Updated gateway \"{entity.Name}\" (ID: {id})");
@@ -166,30 +164,30 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> ToggleActiveAsync(int id)
         {
-            var entity = await _unitOfWork.Repository<PaymentGateway>().GetByIdAsync(id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
             if (entity == null)
                 return Result<bool>.Fail("Gateway not found.");
 
             entity.IsActive  = !entity.IsActive;
             entity.UpdatedAt = DateTime.UtcNow;
-            _unitOfWork.Repository<PaymentGateway>().Update(entity);
-            await _unitOfWork.SaveChangesAsync();
+
+            await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, entity.IsActive ? "Gateway activated." : "Gateway deactivated.");
         }
 
         public async Task<Result<bool>> DeleteAsync(int id)
         {
-            var entity = await _unitOfWork.Repository<PaymentGateway>().GetByIdAsync(id);
+            var entity = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == id));
             if (entity == null)
                 return Result<bool>.Fail("Gateway not found.");
 
-            var hasTx = await _unitOfWork.Repository<PaymentTransaction>().AnyAsync(t => t.GatewayId == id);
+            var hasTx = await _executor.AnyAsync(_context.PaymentTransactions.Where(t => t.GatewayId == id));
             if (hasTx)
                 return Result<bool>.Fail("Cannot delete a gateway that has transactions.");
 
-            _unitOfWork.Repository<PaymentGateway>().Remove(entity);
-            await _unitOfWork.SaveChangesAsync();
+            _context.Remove(entity);
+            await _context.SaveChangesAsync();
 
             await _auditLogService.LogAsync("PaymentGateway", "Delete",
                 details: $"Deleted gateway \"{entity.Name}\"");

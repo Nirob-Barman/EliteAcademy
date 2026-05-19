@@ -1,6 +1,6 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.AuditLog;
 using EliteAcademy.Application.Interfaces;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities;
@@ -9,19 +9,24 @@ namespace EliteAcademy.Application.Services
 {
     public class AuditLogService : IAuditLogService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserContextService _userContextService;
 
-        public AuditLogService(IUnitOfWork unitOfWork, IUserContextService userContextService)
+        public AuditLogService(
+            IApplicationDbContext context,
+            IAsyncQueryExecutor executor,
+            IUserContextService userContextService)
         {
-            _unitOfWork = unitOfWork;
+            _context            = context;
+            _executor           = executor;
             _userContextService = userContextService;
         }
 
         public async Task LogAsync(string entityName, string action, string? details = null,
             string? oldValues = null, string? newValues = null)
         {
-            await _unitOfWork.Repository<AuditLog>().AddAsync(new AuditLog
+            _context.Add(new AuditLog
             {
                 EntityName = entityName,
                 Action     = action,
@@ -32,14 +37,14 @@ namespace EliteAcademy.Application.Services
                 NewValues  = newValues,
                 CreatedAt  = DateTime.UtcNow
             });
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Result<List<AuditLogDto>>> GetAllAsync(
             string? entityFilter = null, string? actionFilter = null,
             int page = 1, int pageSize = 30)
         {
-            var all = (await _unitOfWork.Repository<AuditLog>().GetAllAsync()).ToList();
+            var all = await _executor.ToListAsync(_context.AuditLogs);
 
             if (!string.IsNullOrWhiteSpace(entityFilter))
                 all = all.Where(a => a.EntityName.Contains(entityFilter, StringComparison.OrdinalIgnoreCase)).ToList();

@@ -1,6 +1,6 @@
+using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Notification;
 using EliteAcademy.Application.Interfaces;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities;
@@ -9,12 +9,17 @@ namespace EliteAcademy.Application.Services
 {
     public class NotificationPreferenceService : INotificationPreferenceService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IApplicationDbContext _context;
+        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserContextService _userContextService;
 
-        public NotificationPreferenceService(IUnitOfWork unitOfWork, IUserContextService userContextService)
+        public NotificationPreferenceService(
+            IApplicationDbContext context,
+            IAsyncQueryExecutor executor,
+            IUserContextService userContextService)
         {
-            _unitOfWork         = unitOfWork;
+            _context            = context;
+            _executor           = executor;
             _userContextService = userContextService;
         }
 
@@ -24,8 +29,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<NotificationPreferenceDto>.Fail("User not authenticated.");
 
-            var pref = await _unitOfWork.Repository<NotificationPreference>()
-                .FirstOrDefaultAsync(x => x.UserId == userId);
+            var pref = await _executor.FirstOrDefaultAsync(_context.NotificationPreferences.Where(x => x.UserId == userId));
 
             if (pref == null)
                 pref = new NotificationPreference { UserId = userId };
@@ -48,8 +52,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<bool>.Fail("User not authenticated.");
 
-            var pref = await _unitOfWork.Repository<NotificationPreference>()
-                .FirstOrDefaultAsync(x => x.UserId == userId);
+            var pref = await _executor.FirstOrDefaultAsync(_context.NotificationPreferences.Where(x => x.UserId == userId));
 
             if (pref == null)
             {
@@ -61,7 +64,7 @@ namespace EliteAcademy.Application.Services
                 pref.EmailOnPasswordChange    = dto.EmailOnPasswordChange;
                 pref.InAppOnEnrollment        = dto.InAppOnEnrollment;
                 pref.InAppOnAnnouncement      = dto.InAppOnAnnouncement;
-                await _unitOfWork.Repository<NotificationPreference>().AddAsync(pref);
+                _context.Add(pref);
             }
             else
             {
@@ -72,10 +75,9 @@ namespace EliteAcademy.Application.Services
                 pref.EmailOnPasswordChange    = dto.EmailOnPasswordChange;
                 pref.InAppOnEnrollment        = dto.InAppOnEnrollment;
                 pref.InAppOnAnnouncement      = dto.InAppOnAnnouncement;
-                _unitOfWork.Repository<NotificationPreference>().Update(pref);
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return Result<bool>.Ok(true, "Preferences saved.");
         }
     }

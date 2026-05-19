@@ -1,4 +1,5 @@
-﻿using EliteAcademy.Application.DTOs.Email;
+﻿using EliteAcademy.Application.Common.Interfaces;
+using EliteAcademy.Application.DTOs.Email;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Email;
 using EliteAcademy.Application.Interfaces.Identity;
@@ -24,8 +25,8 @@ namespace EliteAcademy.Infrastructure.DependencyInjection
         {
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+            services.AddScoped<IAsyncQueryExecutor, EfCoreAsyncQueryExecutor>();
 
             services.AddScoped<IUserManager, IdentityUserManager>();
             services.AddScoped<ISignInManager, IdentitySignInManager>();
