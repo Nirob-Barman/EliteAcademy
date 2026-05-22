@@ -16,6 +16,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+
+      - name: Repository info
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Commit SHA: ${{ github.sha }}"
+
+      - name: Runner info
+        run: |
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Workspace: ${{ github.workspace }}"
+          echo "Temp directory: ${{ runner.temp }}
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
