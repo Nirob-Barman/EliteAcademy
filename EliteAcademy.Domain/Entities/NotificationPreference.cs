@@ -2,7 +2,7 @@ namespace EliteAcademy.Domain.Entities
 {
     public class NotificationPreference
     {
-        public int    Id     { get; set; }
+        public int Id { get; set; }
         public string UserId { get; set; } = string.Empty;
 
         // Email notifications

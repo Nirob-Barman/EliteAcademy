@@ -5,9 +5,7 @@ using EliteAcademy.Application.Interfaces.Identity;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
-using EliteAcademy.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
@@ -64,8 +62,10 @@ namespace EliteAcademy.Application.Services
             var studentId = _userContextService.UserId!;
 
             var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == classId);
-            if (cls == null || cls.Status != ClassStatus.Approved)
-                return Result<bool>.Fail("Class not available.");
+
+            var domainResult = Wishlist.Create(studentId, cls);
+            if (!domainResult.IsSuccess)
+                return Result<bool>.Fail(domainResult.Error);
 
             var alreadyWishlisted = await _context.Wishlists.AnyAsync(w => w.StudentId == studentId && w.ClassId == classId);
             if (alreadyWishlisted)
@@ -75,13 +75,7 @@ namespace EliteAcademy.Application.Services
             if (alreadyEnrolled)
                 return Result<bool>.Fail("You are already enrolled in this class.");
 
-            _context.Wishlists.Add(new Wishlist
-            {
-                ClassId = classId,
-                StudentId = studentId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = studentId
-            });
+            _context.Wishlists.Add(domainResult.Value!);
             await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Added to wishlist.");

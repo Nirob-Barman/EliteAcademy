@@ -15,23 +15,23 @@ namespace EliteAcademy.Application.Services
     public class InstructorApplicationService : IInstructorApplicationService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IUserContextService   _userContextService;
-        private readonly IUserManager          _userManager;
-        private readonly INotificationService  _notificationService;
-        private readonly IEmailService         _emailService;
+        private readonly IUserContextService _userContextService;
+        private readonly IUserManager _userManager;
+        private readonly INotificationService _notificationService;
+        private readonly IEmailService _emailService;
 
         public InstructorApplicationService(
             IApplicationDbContext context,
-            IUserContextService   userContextService,
-            IUserManager          userManager,
-            INotificationService  notificationService,
-            IEmailService         emailService)
+            IUserContextService userContextService,
+            IUserManager userManager,
+            INotificationService notificationService,
+            IEmailService emailService)
         {
-            _context             = context;
-            _userContextService  = userContextService;
-            _userManager         = userManager;
+            _context = context;
+            _userContextService = userContextService;
+            _userManager = userManager;
             _notificationService = notificationService;
-            _emailService        = emailService;
+            _emailService = emailService;
         }
 
         public async Task<Result<InstructorApplicationDto>> ApplyAsync(InstructorApplicationFormDto dto)
@@ -63,14 +63,14 @@ namespace EliteAcademy.Application.Services
             var entity = new InstructorApplication
             {
                 ApplicantId = userId,
-                FullName    = $"{user.FirstName} {user.LastName}".Trim(),
-                Email       = user.Email,
-                Bio         = dto.Bio,
-                Expertise   = dto.Expertise,
-                Motivation  = dto.Motivation,
-                Status      = InstructorApplicationStatus.Pending,
-                CreatedBy   = userId,
-                CreatedAt   = DateTime.UtcNow
+                FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                Email = user.Email,
+                Bio = dto.Bio,
+                Expertise = dto.Expertise,
+                Motivation = dto.Motivation,
+                Status = InstructorApplicationStatus.Pending,
+                CreatedBy = userId,
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.InstructorApplications.Add(entity);
@@ -134,9 +134,9 @@ namespace EliteAcademy.Application.Services
             if (!addResult.Succeeded)
                 return Result<bool>.Fail(addResult.Errors.FirstOrDefault() ?? "Failed to assign Instructor role.");
 
-            app.Status     = InstructorApplicationStatus.Approved;
+            app.Status = InstructorApplicationStatus.Approved;
             app.ReviewedAt = DateTime.UtcNow;
-            app.UpdatedAt  = DateTime.UtcNow;
+            app.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             await _notificationService.CreateAsync(
@@ -181,10 +181,10 @@ namespace EliteAcademy.Application.Services
             if (app.Status != InstructorApplicationStatus.Pending)
                 return Result<bool>.Fail("Only pending applications can be rejected.");
 
-            app.Status     = InstructorApplicationStatus.Rejected;
+            app.Status = InstructorApplicationStatus.Rejected;
             app.AdminNotes = adminNotes;
             app.ReviewedAt = DateTime.UtcNow;
-            app.UpdatedAt  = DateTime.UtcNow;
+            app.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             await _notificationService.CreateAsync(

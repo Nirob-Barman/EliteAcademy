@@ -13,25 +13,25 @@ namespace EliteAcademy.Application.Services
 {
     public class UserService : IUserService
     {
-        private readonly IUserManager         _userManager;
-        private readonly ISignInManager       _signInManager;
-        private readonly IRoleManager         _roleManager;
-        private readonly IEmailService        _emailService;
-        private readonly IFileStorage         _fileStorage;
-        private readonly IUserContextService  _userContextService;
+        private readonly IUserManager _userManager;
+        private readonly ISignInManager _signInManager;
+        private readonly IRoleManager _roleManager;
+        private readonly IEmailService _emailService;
+        private readonly IFileStorage _fileStorage;
+        private readonly IUserContextService _userContextService;
         private readonly IApplicationDbContext _context;
 
         public UserService(IUserManager userManager, ISignInManager signInManager, IRoleManager roleManager,
             IEmailService emailService, IFileStorage fileStorage, IUserContextService userContextService,
             IApplicationDbContext context)
         {
-            _userManager        = userManager;
-            _signInManager      = signInManager;
-            _roleManager        = roleManager;
-            _emailService       = emailService;
-            _fileStorage        = fileStorage;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _roleManager = roleManager;
+            _emailService = emailService;
+            _fileStorage = fileStorage;
             _userContextService = userContextService;
-            _context            = context;
+            _context = context;
         }
 
 
@@ -42,12 +42,12 @@ namespace EliteAcademy.Application.Services
 
             var user = new AppUser
             {
-                FirstName   = model.FirstName,
-                LastName    = model.LastName,
-                Email       = model.Email,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
-                Address     = model.Address,
-                Gender      = model.Gender,
+                Address = model.Address,
+                Gender = model.Gender,
                 DateOfBirth = model.DateOfBirth
             };
 
@@ -72,10 +72,10 @@ namespace EliteAcademy.Application.Services
                 {
                     return new Result<string>
                     {
-                        Success     = false,
+                        Success = false,
                         FieldErrors = fieldErrors,
-                        Errors      = errors,
-                        Message     = "Registration failed"
+                        Errors = errors,
+                        Message = "Registration failed"
                     };
                 }
 
@@ -123,11 +123,11 @@ namespace EliteAcademy.Application.Services
         {
             _context.LoginAudits.Add(new LoginAudit
             {
-                Id           = Guid.NewGuid(),
-                UserId       = userId,
-                LoginTime    = DateTime.UtcNow,
-                IPAddress    = _userContextService.IpAddress,
-                UserAgent    = _userContextService.UserAgent,
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                LoginTime = DateTime.UtcNow,
+                IPAddress = _userContextService.IpAddress,
+                UserAgent = _userContextService.UserAgent,
                 IsSuccessful = success,
                 ErrorMessage = errorMessage
             });
@@ -146,9 +146,9 @@ namespace EliteAcademy.Application.Services
                 .Take(50)
                 .Select(x => new LoginHistoryItemDto
                 {
-                    LoginTime    = x.LoginTime,
-                    IPAddress    = x.IPAddress,
-                    UserAgent    = x.UserAgent,
+                    LoginTime = x.LoginTime,
+                    IPAddress = x.IPAddress,
+                    UserAgent = x.UserAgent,
                     IsSuccessful = x.IsSuccessful,
                     ErrorMessage = x.ErrorMessage
                 })
@@ -298,15 +298,15 @@ namespace EliteAcademy.Application.Services
 
             return Result<EditProfileDto>.Ok(new EditProfileDto
             {
-                FirstName   = user.FirstName,
-                LastName    = user.LastName,
-                Email       = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
-                Gender      = user.Gender,
+                Gender = user.Gender,
                 DateOfBirth = user.DateOfBirth,
-                Address     = user.Address,
-                ImageUrl    = user.ImageUrl,
-                Role        = roles.FirstOrDefault()
+                Address = user.Address,
+                ImageUrl = user.ImageUrl,
+                Role = roles.FirstOrDefault()
             });
         }
 
@@ -315,12 +315,12 @@ namespace EliteAcademy.Application.Services
             var user = await _userManager.FindByIdAsync(_userContextService.UserId!);
             if (user == null) return Result<bool>.Fail("User not found.");
 
-            user.FirstName   = dto.FirstName;
-            user.LastName    = dto.LastName;
+            user.FirstName = dto.FirstName;
+            user.LastName = dto.LastName;
             user.PhoneNumber = dto.PhoneNumber;
-            user.Gender      = dto.Gender;
+            user.Gender = dto.Gender;
             user.DateOfBirth = dto.DateOfBirth;
-            user.Address     = dto.Address;
+            user.Address = dto.Address;
 
             if (imageStream != null && !string.IsNullOrWhiteSpace(imageFileName))
             {

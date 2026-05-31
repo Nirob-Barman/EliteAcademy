@@ -1,3 +1,4 @@
+using EliteAcademy.Application.Common;
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.QA;
 using EliteAcademy.Application.Interfaces;
@@ -78,22 +79,15 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            if (string.IsNullOrWhiteSpace(dto.QuestionText))
-                return Result<bool>.FailField("QuestionText", "Question cannot be empty.");
+            var domainResult = QaQuestion.Create(studentId, dto.ClassId, dto.QuestionText);
+            if (!domainResult.IsSuccess)
+                return Result<bool>.FailField("QuestionText", domainResult.Error);
 
-            // Ensure the student is enrolled
             var enrolled = await _context.Enrollments.AnyAsync(e => e.StudentId == studentId && e.ClassId == dto.ClassId);
             if (!enrolled)
                 return Result<bool>.Fail("You must be enrolled to ask a question.");
 
-            _context.QaQuestions.Add(new QaQuestion
-            {
-                ClassId = dto.ClassId,
-                StudentId = studentId,
-                QuestionText = dto.QuestionText.Trim(),
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = studentId
-            });
+            _context.QaQuestions.Add(domainResult.Value!);
             await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Question posted.");
@@ -103,26 +97,17 @@ namespace EliteAcademy.Application.Services
         {
             var instructorId = _userContextService.UserId!;
 
-            if (string.IsNullOrWhiteSpace(dto.AnswerText))
-                return Result<bool>.FailField("AnswerText", "Answer cannot be empty.");
-
             var question = await _context.QaQuestions.AsNoTracking().FirstOrDefaultAsync(q => q.Id == dto.QuestionId);
             if (question == null)
                 return Result<bool>.Fail("Question not found.");
 
-            // Verify the question belongs to one of this instructor's classes
             var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == question.ClassId);
-            if (cls == null || cls.InstructorId != instructorId)
-                return Result<bool>.Fail("Not authorized to answer this question.");
 
-            _context.QaAnswers.Add(new QaAnswer
-            {
-                QuestionId = dto.QuestionId,
-                InstructorId = instructorId,
-                AnswerText = dto.AnswerText.Trim(),
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = instructorId
-            });
+            var domainResult = QaAnswer.Create(instructorId, dto.QuestionId, dto.AnswerText, cls);
+            if (!domainResult.IsSuccess)
+                return Result<bool>.FailField("AnswerText", domainResult.Error);
+
+            _context.QaAnswers.Add(domainResult.Value!);
             await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Answer posted.");

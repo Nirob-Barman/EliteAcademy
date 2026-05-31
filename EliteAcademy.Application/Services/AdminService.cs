@@ -19,45 +19,45 @@ namespace EliteAcademy.Application.Services
     public class AdminService : IAdminService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IUserManager          _userManager;
-        private readonly IUserContextService   _userContextService;
-        private readonly INotificationService  _notificationService;
-        private readonly IAuditLogService      _auditLogService;
-        private readonly IEmailService         _emailService;
+        private readonly IUserManager _userManager;
+        private readonly IUserContextService _userContextService;
+        private readonly INotificationService _notificationService;
+        private readonly IAuditLogService _auditLogService;
+        private readonly IEmailService _emailService;
 
         public AdminService(
             IApplicationDbContext context,
-            IUserManager          userManager,
-            IUserContextService   userContextService,
-            INotificationService  notificationService,
-            IAuditLogService      auditLogService,
-            IEmailService         emailService)
+            IUserManager userManager,
+            IUserContextService userContextService,
+            INotificationService notificationService,
+            IAuditLogService auditLogService,
+            IEmailService emailService)
         {
-            _context             = context;
-            _userManager         = userManager;
-            _userContextService  = userContextService;
+            _context = context;
+            _userManager = userManager;
+            _userContextService = userContextService;
             _notificationService = notificationService;
-            _auditLogService     = auditLogService;
-            _emailService        = emailService;
+            _auditLogService = auditLogService;
+            _emailService = emailService;
         }
 
         public async Task<Result<AdminDashboardDto>> GetDashboardAsync()
         {
-            var allUsers    = (await _userManager.GetAllUsersAsync()).ToList();
+            var allUsers = (await _userManager.GetAllUsersAsync()).ToList();
             var instructors = (await _userManager.GetUsersByRoleAsync("Instructor")).ToList();
-            var students    = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
-            var allClasses  = await _context.Classes.AsNoTracking().ToListAsync();
+            var students = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
+            var allClasses = await _context.Classes.AsNoTracking().ToListAsync();
             var pendingApps = await _context.InstructorApplications.CountAsync(a => a.Status == InstructorApplicationStatus.Pending);
 
             return Result<AdminDashboardDto>.Ok(new AdminDashboardDto
             {
-                TotalUsers                    = allUsers.Count,
-                TotalInstructors              = instructors.Count,
-                TotalStudents                 = students.Count,
-                TotalClasses                  = allClasses.Count,
-                PendingClasses                = allClasses.Count(c => c.Status == ClassStatus.Pending),
-                ApprovedClasses               = allClasses.Count(c => c.Status == ClassStatus.Approved),
-                RejectedClasses               = allClasses.Count(c => c.Status == ClassStatus.Rejected),
+                TotalUsers = allUsers.Count,
+                TotalInstructors = instructors.Count,
+                TotalStudents = students.Count,
+                TotalClasses = allClasses.Count,
+                PendingClasses = allClasses.Count(c => c.Status == ClassStatus.Pending),
+                ApprovedClasses = allClasses.Count(c => c.Status == ClassStatus.Approved),
+                RejectedClasses = allClasses.Count(c => c.Status == ClassStatus.Rejected),
                 PendingInstructorApplications = pendingApps
             });
         }
@@ -65,17 +65,17 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<AdminUserDto>>> GetAllUsersAsync()
         {
             var users = await _userManager.GetAllUsersAsync();
-            var dtos  = new List<AdminUserDto>();
+            var dtos = new List<AdminUserDto>();
 
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
                 dtos.Add(new AdminUserDto
                 {
-                    Id       = user.Id,
+                    Id = user.Id,
                     FullName = $"{user.FirstName} {user.LastName}".Trim(),
-                    Email    = user.Email,
-                    Role     = roles.FirstOrDefault() ?? "No Role"
+                    Email = user.Email,
+                    Role = roles.FirstOrDefault() ?? "No Role"
                 });
             }
 
@@ -115,7 +115,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<ClassDto>>> GetAllClassesAsync()
         {
             var classes = await _context.Classes.AsNoTracking().ToListAsync();
-            var users   = await _userManager.GetAllUsersAsync();
+            var users = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(
                 u => u.Id ?? "",
                 u => $"{u.FirstName} {u.LastName}".Trim());
@@ -133,8 +133,8 @@ namespace EliteAcademy.Application.Services
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 
-            entity.Status    = ClassStatus.Approved;
-            entity.Feedback  = null;
+            entity.Status = ClassStatus.Approved;
+            entity.Feedback = null;
             entity.UpdatedAt = DateTime.UtcNow;
             entity.UpdatedBy = _userContextService.UserId;
             await _context.SaveChangesAsync();
@@ -187,8 +187,8 @@ namespace EliteAcademy.Application.Services
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 
-            entity.Status    = ClassStatus.Rejected;
-            entity.Feedback  = feedback;
+            entity.Status = ClassStatus.Rejected;
+            entity.Feedback = feedback;
             entity.UpdatedAt = DateTime.UtcNow;
             entity.UpdatedBy = _userContextService.UserId;
             await _context.SaveChangesAsync();
@@ -235,17 +235,17 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<PlatformStatsDto>> GetPlatformStatsAsync()
         {
-            var students    = await _userManager.GetUsersByRoleAsync("Student");
+            var students = await _userManager.GetUsersByRoleAsync("Student");
             var instructors = await _userManager.GetUsersByRoleAsync("Instructor");
             var enrollments = await _context.Enrollments.CountAsync();
-            var classes     = await _context.Classes.CountAsync(c => c.Status == ClassStatus.Approved);
+            var classes = await _context.Classes.CountAsync(c => c.Status == ClassStatus.Approved);
 
             return Result<PlatformStatsDto>.Ok(new PlatformStatsDto
             {
-                ActiveStudents    = students.Count(),
+                ActiveStudents = students.Count(),
                 ExpertInstructors = instructors.Count(),
-                TotalEnrollments  = enrollments,
-                ApprovedClasses   = classes
+                TotalEnrollments = enrollments,
+                ApprovedClasses = classes
             });
         }
 
@@ -253,17 +253,17 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<AdminStudentDto>>> GetAllStudentsAsync()
         {
-            var students    = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
+            var students = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
             var enrollments = await _context.Enrollments.AsNoTracking().ToListAsync();
 
             var dtos = students.Select(s => new AdminStudentDto
             {
-                Id              = s.Id,
-                FullName        = $"{s.FirstName} {s.LastName}".Trim(),
-                Email           = s.Email,
+                Id = s.Id,
+                FullName = $"{s.FirstName} {s.LastName}".Trim(),
+                Email = s.Email,
                 EnrollmentCount = enrollments.Count(e => e.StudentId == s.Id),
-                IsBanned        = s.IsBanned,
-                JoinedAt        = DateTime.UtcNow
+                IsBanned = s.IsBanned,
+                JoinedAt = DateTime.UtcNow
             }).ToList();
 
             return Result<List<AdminStudentDto>>.Ok(dtos);
@@ -321,21 +321,21 @@ namespace EliteAcademy.Application.Services
                 allUsers.TryGetValue(e.StudentId ?? "", out var student);
                 return new StudentEnrollmentRowDto
                 {
-                    StudentId   = e.StudentId,
+                    StudentId = e.StudentId,
                     StudentName = student != null ? $"{student.FirstName} {student.LastName}".Trim() : "Unknown",
-                    Email       = student?.Email,
-                    EnrolledAt  = e.EnrolledAt
+                    Email = student?.Email,
+                    EnrolledAt = e.EnrolledAt
                 };
             }).ToList();
 
             return Result<AdminClassEnrollmentsDto>.Ok(new AdminClassEnrollmentsDto
             {
-                ClassId        = cls.Id,
-                ClassName      = cls.ClassName,
+                ClassId = cls.Id,
+                ClassName = cls.ClassName,
                 InstructorName = instructorName,
-                Price          = cls.Price,
+                Price = cls.Price,
                 AvailableSeats = cls.AvailableSeats,
-                Enrollments    = rows
+                Enrollments = rows
             });
         }
 
@@ -347,13 +347,13 @@ namespace EliteAcademy.Application.Services
                 t => t.Status == PaymentTransactionStatus.Success && t.CreatedAt.Year == year).ToListAsync();
 
             var preEnrollmentIds = transactions.Select(t => t.PreEnrollmentId).Distinct().ToList();
-            var preEnrollments   = await _context.PreEnrollments.AsNoTracking().Where(p => preEnrollmentIds.Contains(p.Id)).ToListAsync();
+            var preEnrollments = await _context.PreEnrollments.AsNoTracking().Where(p => preEnrollmentIds.Contains(p.Id)).ToListAsync();
 
             var classIds = preEnrollments.Select(p => p.ClassId).Distinct().ToList();
-            var classes  = await _context.Classes.AsNoTracking().Where(c => classIds.Contains(c.Id)).ToListAsync();
+            var classes = await _context.Classes.AsNoTracking().Where(c => classIds.Contains(c.Id)).ToListAsync();
 
-            var allUsers     = (await _userManager.GetAllUsersAsync()).ToDictionary(u => u.Id ?? "");
-            var classMap     = classes.ToDictionary(c => c.Id);
+            var allUsers = (await _userManager.GetAllUsersAsync()).ToDictionary(u => u.Id ?? "");
+            var classMap = classes.ToDictionary(c => c.Id);
             var preEnrollMap = preEnrollments.ToDictionary(p => p.Id);
 
             var byMonth = Enumerable.Range(1, 12).Select(m =>
@@ -361,9 +361,9 @@ namespace EliteAcademy.Application.Services
                 var monthTx = transactions.Where(t => t.CreatedAt.Month == m).ToList();
                 return new MonthlyRevenueDto
                 {
-                    Month        = m,
-                    MonthName    = new DateTime(year, m, 1).ToString("MMMM"),
-                    Revenue      = monthTx.Sum(t => t.Amount),
+                    Month = m,
+                    MonthName = new DateTime(year, m, 1).ToString("MMMM"),
+                    Revenue = monthTx.Sum(t => t.Amount),
                     Transactions = monthTx.Count
                 };
             }).ToList();
@@ -380,10 +380,10 @@ namespace EliteAcademy.Application.Services
                     classMap.TryGetValue(g.Key, out var cls);
                     return new ClassRevenueDto
                     {
-                        ClassId   = g.Key,
+                        ClassId = g.Key,
                         ClassName = cls?.ClassName ?? "Unknown",
-                        Revenue   = g.Sum(t => t.Amount),
-                        Enrolled  = g.Count()
+                        Revenue = g.Sum(t => t.Amount),
+                        Enrolled = g.Count()
                     };
                 })
                 .OrderByDescending(x => x.Revenue)
@@ -403,11 +403,11 @@ namespace EliteAcademy.Application.Services
                     allUsers.TryGetValue(g.Key!, out var instructor);
                     return new InstructorRevenueDto
                     {
-                        InstructorId   = g.Key,
+                        InstructorId = g.Key,
                         InstructorName = instructor != null
                             ? $"{instructor.FirstName} {instructor.LastName}".Trim()
                             : "Unknown",
-                        Revenue  = g.Sum(t => t.Amount),
+                        Revenue = g.Sum(t => t.Amount),
                         Enrolled = g.Count()
                     };
                 })
@@ -416,12 +416,12 @@ namespace EliteAcademy.Application.Services
 
             return Result<RevenueReportDto>.Ok(new RevenueReportDto
             {
-                Year              = year,
-                TotalRevenue      = transactions.Sum(t => t.Amount),
+                Year = year,
+                TotalRevenue = transactions.Sum(t => t.Amount),
                 TotalTransactions = transactions.Count,
-                ByMonth           = byMonth,
-                ByClass           = byClass,
-                ByInstructor      = byInstructor
+                ByMonth = byMonth,
+                ByClass = byClass,
+                ByInstructor = byInstructor
             });
         }
     }

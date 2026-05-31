@@ -1,3 +1,4 @@
+using EliteAcademy.Application.Common;
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Instructor;
 using EliteAcademy.Application.Interfaces;
@@ -5,7 +6,6 @@ using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
-using EliteAcademy.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
@@ -48,24 +48,13 @@ namespace EliteAcademy.Application.Services
         {
             var instructorId = _userContextService.UserId!;
 
-            if (string.IsNullOrWhiteSpace(dto.Title))
-                return Result<bool>.FailField("Title", "Title is required.");
-
             var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == dto.ClassId);
-            if (cls == null || cls.InstructorId != instructorId)
-                return Result<bool>.Fail("Class not found.");
-            if (cls.Status != ClassStatus.Approved)
-                return Result<bool>.Fail("You can only post announcements for approved classes.");
 
-            var announcement = new Announcement
-            {
-                ClassId   = dto.ClassId,
-                Title     = dto.Title.Trim(),
-                Body      = dto.Body.Trim(),
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = instructorId
-            };
-            _context.Announcements.Add(announcement);
+            var domainResult = Announcement.Create(instructorId, cls, dto.Title, dto.Body);
+            if (!domainResult.IsSuccess)
+                return Result<bool>.Fail(domainResult.Error);
+
+            _context.Announcements.Add(domainResult.Value!);
             await _context.SaveChangesAsync();
 
             var enrollments = await _context.Enrollments.AsNoTracking().Where(e => e.ClassId == dto.ClassId).ToListAsync();
@@ -76,7 +65,7 @@ namespace EliteAcademy.Application.Services
                     await _notificationService.CreateAsync(
                         enrollment.StudentId,
                         $"New announcement: {dto.Title}",
-                        $"Your instructor posted an announcement in \"{cls.ClassName}\".",
+                        $"Your instructor posted an announcement in \"{cls?.ClassName}\".",
                         $"/Student/ClassAnnouncements?classId={dto.ClassId}");
                 }
             }

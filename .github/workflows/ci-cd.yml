@@ -1,5 +1,4 @@
 name: Build, publish and deploy to MonsterASP.NET
-# on: [push]
 on:
   push:
     branches: [ "main" ]
@@ -15,22 +14,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-
-      - name: Repository info
-        run: |
-          echo "Repository: ${{ github.repository }}"
-          echo "Branch: ${{ github.ref }}"
-          echo "Actor: ${{ github.actor }}"
-          echo "Event: ${{ github.event_name }}"
-          echo "Commit SHA: ${{ github.sha }}"
-
-      - name: Runner info
-        run: |
-          echo "Runner OS: ${{ runner.os }}"
-          echo "Workspace: ${{ github.workspace }}"
-          echo "Temp directory: ${{ runner.temp }}"
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
@@ -48,7 +31,6 @@ jobs:
 
       - name: Publish
         run: dotnet publish --configuration Release --output ./publish --runtime win-x86
-        # run: dotnet publish --configuration Release --output ./publish 
         
       - name: Deploy to MonsterASP.NET via WebDeploy
         uses: rasmusbuchholdt/simply-web-deploy@2.1.0

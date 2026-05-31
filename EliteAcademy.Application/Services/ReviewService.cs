@@ -1,12 +1,11 @@
+using EliteAcademy.Application.Common;
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Review;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Persistence;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,8 +70,9 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            if (dto.Rating < 1 || dto.Rating > 5)
-                return Result<bool>.FailField("Rating", "Rating must be between 1 and 5.");
+            var domainResult = Review.Create(studentId, dto.ClassId, dto.Rating, dto.Comment);
+            if (!domainResult.IsSuccess)
+                return Result<bool>.FailField("Rating", domainResult.Error);
 
             var isEnrolled = await _context.Enrollments.AnyAsync(e => e.StudentId == studentId && e.ClassId == dto.ClassId);
             if (!isEnrolled)
@@ -82,15 +82,7 @@ namespace EliteAcademy.Application.Services
             if (alreadyReviewed)
                 return Result<bool>.Fail("You have already reviewed this class.");
 
-            _context.Reviews.Add(new Review
-            {
-                ClassId = dto.ClassId,
-                StudentId = studentId,
-                Rating = dto.Rating,
-                Comment = dto.Comment?.Trim(),
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = studentId
-            });
+            _context.Reviews.Add(domainResult.Value!);
             await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Review submitted.");
