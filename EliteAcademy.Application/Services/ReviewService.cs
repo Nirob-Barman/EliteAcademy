@@ -8,36 +8,34 @@ using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class ReviewService : IReviewService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserManager _userManager;
         private readonly IUserContextService _userContextService;
 
         public ReviewService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor executor,
             IUserManager userManager,
             IUserContextService userContextService)
         {
             _context = context;
-            _executor = executor;
             _userManager = userManager;
             _userContextService = userContextService;
         }
 
         public async Task<Result<List<ReviewDto>>> GetClassReviewsAsync(int classId)
         {
-            var reviews = await _executor.ToListAsync(_context.Reviews.Where(r => r.ClassId == classId), noTracking: true);
+            var reviews = await _context.Reviews.AsNoTracking().Where(r => r.ClassId == classId).ToListAsync();
 
             var users = await _userManager.GetAllUsersAsync();
             var userMap = users.ToDictionary(u => u.Id ?? "", u => $"{u.FirstName} {u.LastName}".Trim());
 
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId), noTracking: true);
+            var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == classId);
             var dtos = reviews
                 .Select(r => ReviewMapper.ToDto(r,
                     userMap.GetValueOrDefault(r.StudentId ?? ""),
@@ -49,7 +47,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<Dictionary<int, (double Avg, int Count)>>> GetReviewSummaryAsync()
         {
-            var all = await _executor.ToListAsync(_context.Reviews, noTracking: true);
+            var all = await _context.Reviews.AsNoTracking().ToListAsync();
             var summary = all
                 .GroupBy(r => r.ClassId)
                 .ToDictionary(
@@ -62,7 +60,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<HashSet<int>>> GetReviewedClassIdsAsync()
         {
             var studentId = _userContextService.UserId!;
-            var ids = (await _executor.ToListAsync(_context.Reviews.Where(r => r.StudentId == studentId), noTracking: true))
+            var ids = (await _context.Reviews.AsNoTracking().Where(r => r.StudentId == studentId).ToListAsync())
                 .Select(r => r.ClassId)
                 .ToHashSet();
 
@@ -76,15 +74,15 @@ namespace EliteAcademy.Application.Services
             if (dto.Rating < 1 || dto.Rating > 5)
                 return Result<bool>.FailField("Rating", "Rating must be between 1 and 5.");
 
-            var isEnrolled = await _executor.AnyAsync(_context.Enrollments.Where(e => e.StudentId == studentId && e.ClassId == dto.ClassId));
+            var isEnrolled = await _context.Enrollments.AnyAsync(e => e.StudentId == studentId && e.ClassId == dto.ClassId);
             if (!isEnrolled)
                 return Result<bool>.Fail("You must be enrolled to leave a review.");
 
-            var alreadyReviewed = await _executor.AnyAsync(_context.Reviews.Where(r => r.StudentId == studentId && r.ClassId == dto.ClassId));
+            var alreadyReviewed = await _context.Reviews.AnyAsync(r => r.StudentId == studentId && r.ClassId == dto.ClassId);
             if (alreadyReviewed)
                 return Result<bool>.Fail("You have already reviewed this class.");
 
-            _context.Add(new Review
+            _context.Reviews.Add(new Review
             {
                 ClassId = dto.ClassId,
                 StudentId = studentId,
@@ -101,13 +99,13 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> DeleteAsync(int reviewId)
         {
             var studentId = _userContextService.UserId!;
-            var review = await _executor.FirstOrDefaultAsync(_context.Reviews.Where(r => r.Id == reviewId), noTracking: true);
+            var review = await _context.Reviews.AsNoTracking().FirstOrDefaultAsync(r => r.Id == reviewId);
             if (review == null)
                 return Result<bool>.Fail("Review not found.");
             if (review.StudentId != studentId)
                 return Result<bool>.Fail("Not authorized.");
 
-            _context.Remove(review);
+            _context.Reviews.Remove(review);
             await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Review deleted.");

@@ -8,13 +8,13 @@ using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities;
 using EliteAcademy.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class InstructorApplicationService : IInstructorApplicationService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor   _executor;
         private readonly IUserContextService   _userContextService;
         private readonly IUserManager          _userManager;
         private readonly INotificationService  _notificationService;
@@ -22,14 +22,12 @@ namespace EliteAcademy.Application.Services
 
         public InstructorApplicationService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor   executor,
             IUserContextService   userContextService,
             IUserManager          userManager,
             INotificationService  notificationService,
             IEmailService         emailService)
         {
             _context             = context;
-            _executor            = executor;
             _userContextService  = userContextService;
             _userManager         = userManager;
             _notificationService = notificationService;
@@ -49,10 +47,10 @@ namespace EliteAcademy.Application.Services
             if (await _userManager.IsUserInRoleAsync(user, "Instructor"))
                 return Result<InstructorApplicationDto>.Fail("You are already an instructor.");
 
-            var existing = await _executor.FirstOrDefaultAsync(_context.InstructorApplications.Where(
+            var existing = await _context.InstructorApplications.AsNoTracking().FirstOrDefaultAsync(
                 a => a.ApplicantId == userId
                   && (a.Status == InstructorApplicationStatus.Pending
-                   || a.Status == InstructorApplicationStatus.Approved)), noTracking: true);
+                   || a.Status == InstructorApplicationStatus.Approved));
 
             if (existing != null)
             {
@@ -75,7 +73,7 @@ namespace EliteAcademy.Application.Services
                 CreatedAt   = DateTime.UtcNow
             };
 
-            _context.Add(entity);
+            _context.InstructorApplications.Add(entity);
             await _context.SaveChangesAsync();
 
             return Result<InstructorApplicationDto>.Ok(
@@ -89,7 +87,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<InstructorApplicationDto?>.Ok(null);
 
-            var apps = await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.ApplicantId == userId), noTracking: true);
+            var apps = await _context.InstructorApplications.AsNoTracking().Where(a => a.ApplicantId == userId).ToListAsync();
             var latest = apps.OrderByDescending(a => a.CreatedAt).FirstOrDefault();
             return Result<InstructorApplicationDto?>.Ok(
                 latest != null ? InstructorApplicationMapper.ToDto(latest) : null);
@@ -97,7 +95,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<InstructorApplicationDto>>> GetAllAsync()
         {
-            var apps = (await _executor.ToListAsync(_context.InstructorApplications, noTracking: true))
+            var apps = (await _context.InstructorApplications.AsNoTracking().ToListAsync())
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(InstructorApplicationMapper.ToDto)
                 .ToList();
@@ -107,7 +105,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<InstructorApplicationDto>>> GetPendingAsync()
         {
-            var apps = (await _executor.ToListAsync(_context.InstructorApplications.Where(a => a.Status == InstructorApplicationStatus.Pending), noTracking: true))
+            var apps = (await _context.InstructorApplications.AsNoTracking().Where(a => a.Status == InstructorApplicationStatus.Pending).ToListAsync())
                 .OrderBy(a => a.CreatedAt)
                 .Select(InstructorApplicationMapper.ToDto)
                 .ToList();
@@ -117,7 +115,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> ApproveAsync(int applicationId)
         {
-            var app = await _executor.FirstOrDefaultAsync(_context.InstructorApplications.Where(a => a.Id == applicationId));
+            var app = await _context.InstructorApplications.FirstOrDefaultAsync(a => a.Id == applicationId);
             if (app == null)
                 return Result<bool>.Fail("Application not found.");
 
@@ -176,7 +174,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(adminNotes))
                 return Result<bool>.Fail("A reason is required when rejecting an application.");
 
-            var app = await _executor.FirstOrDefaultAsync(_context.InstructorApplications.Where(a => a.Id == applicationId));
+            var app = await _context.InstructorApplications.FirstOrDefaultAsync(a => a.Id == applicationId);
             if (app == null)
                 return Result<bool>.Fail("Application not found.");
 

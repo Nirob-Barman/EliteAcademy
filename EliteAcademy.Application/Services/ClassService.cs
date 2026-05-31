@@ -7,26 +7,24 @@ using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class ClassService : IClassService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserManager _userManager;
         private readonly IUserContextService _userContextService;
         private readonly IFileStorage _fileStorage;
 
         public ClassService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor executor,
             IUserManager userManager,
             IUserContextService userContextService,
             IFileStorage fileStorage)
         {
             _context            = context;
-            _executor           = executor;
             _userManager        = userManager;
             _userContextService = userContextService;
             _fileStorage        = fileStorage;
@@ -34,7 +32,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<ClassDto>>> GetApprovedAsync()
         {
-            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.Status == ClassStatus.Approved), noTracking: true);
+            var classes = await _context.Classes.AsNoTracking().Where(c => c.Status == ClassStatus.Approved).ToListAsync();
 
             var users = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(
@@ -54,7 +52,7 @@ namespace EliteAcademy.Application.Services
             var user = await _userManager.FindByIdAsync(instructorId);
             var instructorName = user == null ? "" : $"{user.FirstName} {user.LastName}".Trim();
 
-            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId), noTracking: true);
+            var classes = await _context.Classes.AsNoTracking().Where(c => c.InstructorId == instructorId).ToListAsync();
 
             var dtos = classes
                 .Select(c => ClassMapper.ToDto(c, instructorName))
@@ -65,7 +63,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<ClassDto>> GetByIdAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == id), noTracking: true);
+            var entity = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
             if (entity == null)
                 return Result<ClassDto>.Fail("Class not found.");
 
@@ -93,7 +91,7 @@ namespace EliteAcademy.Application.Services
             if (imageStream != null && !string.IsNullOrWhiteSpace(imageFileName))
                 entity.ClassImage = await _fileStorage.UploadFileAsync(imageStream, imageFileName, "uploads/classes");
 
-            _context.Add(entity);
+            _context.Classes.Add(entity);
             await _context.SaveChangesAsync();
 
             return Result<int>.Ok(entity.Id, "Class submitted for approval.");
@@ -101,7 +99,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> UpdateAsync(ClassFormDto dto, Stream? imageStream, string? imageFileName)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == dto.Id));
+            var entity = await _context.Classes.FirstOrDefaultAsync(c => c.Id == dto.Id);
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 

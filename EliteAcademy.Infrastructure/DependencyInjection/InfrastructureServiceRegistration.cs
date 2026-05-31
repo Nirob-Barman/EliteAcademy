@@ -26,7 +26,6 @@ namespace EliteAcademy.Infrastructure.DependencyInjection
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
-            services.AddScoped<IAsyncQueryExecutor, EfCoreAsyncQueryExecutor>();
 
             services.AddScoped<IUserManager, IdentityUserManager>();
             services.AddScoped<ISignInManager, IdentitySignInManager>();

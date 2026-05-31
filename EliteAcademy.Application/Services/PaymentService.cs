@@ -8,6 +8,7 @@ using EliteAcademy.Domain.Entities;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace EliteAcademy.Application.Services
@@ -15,7 +16,6 @@ namespace EliteAcademy.Application.Services
     public class PaymentService : IPaymentService
     {
         private readonly IApplicationDbContext    _context;
-        private readonly IAsyncQueryExecutor      _executor;
         private readonly IPaymentProcessorFactory _processorFactory;
         private readonly IPaymentGatewayService   _gatewayService;
         private readonly IUserContextService      _userContextService;
@@ -25,7 +25,6 @@ namespace EliteAcademy.Application.Services
 
         public PaymentService(
             IApplicationDbContext    context,
-            IAsyncQueryExecutor      executor,
             IPaymentProcessorFactory processorFactory,
             IPaymentGatewayService   gatewayService,
             IUserContextService      userContextService,
@@ -34,7 +33,6 @@ namespace EliteAcademy.Application.Services
             IEmailService            emailService)
         {
             _context             = context;
-            _executor            = executor;
             _processorFactory    = processorFactory;
             _gatewayService      = gatewayService;
             _userContextService  = userContextService;
@@ -47,17 +45,17 @@ namespace EliteAcademy.Application.Services
             int preEnrollmentId, string gatewaySlug, string baseUrl)
         {
             var studentId     = _userContextService.UserId!;
-            var preEnrollment = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == preEnrollmentId), noTracking: true);
+            var preEnrollment = await _context.PreEnrollments.AsNoTracking().FirstOrDefaultAsync(p => p.Id == preEnrollmentId);
             if (preEnrollment == null || preEnrollment.StudentId != studentId)
                 return Result<string>.Fail("Selection not found.");
             if (preEnrollment.PaymentStatus != PaymentStatus.Pending)
                 return Result<string>.Fail("This selection has already been paid.");
 
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == preEnrollment.ClassId), noTracking: true);
+            var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == preEnrollment.ClassId);
             if (cls == null || cls.AvailableSeats <= 0)
                 return Result<string>.Fail("No available seats remaining.");
 
-            var gateway = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Slug == gatewaySlug && g.IsActive), noTracking: true);
+            var gateway = await _context.PaymentGateways.AsNoTracking().FirstOrDefaultAsync(g => g.Slug == gatewaySlug && g.IsActive);
             if (gateway == null)
                 return Result<string>.Fail("Payment gateway not available.");
 
@@ -69,48 +67,59 @@ namespace EliteAcademy.Application.Services
             var successUrl = $"{baseUrl}/Payment/Success?txId=0&gateway={gatewaySlug}";
             var cancelUrl  = $"{baseUrl}/Payment/Cancel?txId=0";
 
-            var tx = new PaymentTransaction
+            await _context.BeginTransactionAsync();
+            try
             {
-                PreEnrollmentId = preEnrollmentId,
-                GatewayId       = gateway.Id,
-                Amount          = amount,
-                Status          = PaymentTransactionStatus.Pending,
-                CreatedAt       = DateTime.UtcNow,
-                CreatedBy       = studentId
-            };
-            _context.Add(tx);
-            await _context.SaveChangesAsync();
-
-            successUrl = $"{baseUrl}/Payment/Success?txId={tx.Id}&gateway={gatewaySlug}";
-            cancelUrl  = $"{baseUrl}/Payment/Cancel?txId={tx.Id}";
-
-            var configResult = await _gatewayService.GetDecryptedConfigAsync(gateway.Id);
-            var config = configResult.Success && !string.IsNullOrWhiteSpace(configResult.Data)
-                ? JsonSerializer.Deserialize<Dictionary<string, string>>(configResult.Data) ?? new()
-                : new Dictionary<string, string>();
-
-            var initiateResult = await processor.InitiateAsync(config, amount, tx.Id, successUrl, cancelUrl);
-            if (!initiateResult.Success)
-            {
-                tx.Status    = PaymentTransactionStatus.Failed;
-                tx.UpdatedAt = DateTime.UtcNow;
+                var tx = new PaymentTransaction
+                {
+                    PreEnrollmentId = preEnrollmentId,
+                    GatewayId       = gateway.Id,
+                    Amount          = amount,
+                    Status          = PaymentTransactionStatus.Pending,
+                    CreatedAt       = DateTime.UtcNow,
+                    CreatedBy       = studentId
+                };
+                _context.PaymentTransactions.Add(tx);
                 await _context.SaveChangesAsync();
-                return Result<string>.Fail(initiateResult.ErrorMessage ?? "Payment initiation failed.");
-            }
 
-            return Result<string>.Ok(initiateResult.RedirectUrl!, "Payment initiated.");
+                successUrl = $"{baseUrl}/Payment/Success?txId={tx.Id}&gateway={gatewaySlug}";
+                cancelUrl  = $"{baseUrl}/Payment/Cancel?txId={tx.Id}";
+
+                var configResult = await _gatewayService.GetDecryptedConfigAsync(gateway.Id);
+                var config = configResult.Success && !string.IsNullOrWhiteSpace(configResult.Data)
+                    ? JsonSerializer.Deserialize<Dictionary<string, string>>(configResult.Data) ?? new()
+                    : new Dictionary<string, string>();
+
+                var initiateResult = await processor.InitiateAsync(config, amount, tx.Id, successUrl, cancelUrl);
+                if (!initiateResult.Success)
+                {
+                    tx.Status    = PaymentTransactionStatus.Failed;
+                    tx.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    await _context.CommitTransactionAsync();
+                    return Result<string>.Fail(initiateResult.ErrorMessage ?? "Payment initiation failed.");
+                }
+
+                await _context.CommitTransactionAsync();
+                return Result<string>.Ok(initiateResult.RedirectUrl!, "Payment initiated.");
+            }
+            catch
+            {
+                await _context.RollbackTransactionAsync();
+                return Result<string>.Fail("Payment initiation failed.");
+            }
         }
 
         public async Task<Result<bool>> HandleSuccessAsync(
             int txId, string gatewaySlug, Dictionary<string, string> callbackParams)
         {
-            var tx = await _executor.FirstOrDefaultAsync(_context.PaymentTransactions.Where(t => t.Id == txId));
+            var tx = await _context.PaymentTransactions.FirstOrDefaultAsync(t => t.Id == txId);
             if (tx == null)
                 return Result<bool>.Fail("Transaction not found.");
             if (tx.Status != PaymentTransactionStatus.Pending)
                 return Result<bool>.Fail("Transaction already processed.");
 
-            var gateway = await _executor.FirstOrDefaultAsync(_context.PaymentGateways.Where(g => g.Id == tx.GatewayId), noTracking: true);
+            var gateway = await _context.PaymentGateways.AsNoTracking().FirstOrDefaultAsync(g => g.Id == tx.GatewayId);
             if (gateway == null)
                 return Result<bool>.Fail("Gateway not found.");
 
@@ -132,78 +141,89 @@ namespace EliteAcademy.Application.Services
                 return Result<bool>.Fail("Payment verification failed.");
             }
 
-            tx.Status    = PaymentTransactionStatus.Success;
-            tx.UpdatedAt = DateTime.UtcNow;
-
-            var preEnrollment = await _executor.FirstOrDefaultAsync(_context.PreEnrollments.Where(p => p.Id == tx.PreEnrollmentId));
-            if (preEnrollment == null || preEnrollment.PaymentStatus != PaymentStatus.Pending)
-            {
-                await _context.SaveChangesAsync();
-                return Result<bool>.Ok(true, "Payment received (already enrolled).");
-            }
-
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == preEnrollment.ClassId));
-            if (cls == null)
-                return Result<bool>.Fail("Class not found.");
-
-            preEnrollment.PaymentStatus = PaymentStatus.Paid;
-            preEnrollment.UpdatedAt     = DateTime.UtcNow;
-            preEnrollment.UpdatedBy     = preEnrollment.StudentId;
-
-            _context.Add(new Enrollment
-            {
-                ClassId    = preEnrollment.ClassId,
-                StudentId  = preEnrollment.StudentId,
-                EnrolledAt = DateTime.UtcNow,
-                CreatedAt  = DateTime.UtcNow,
-                CreatedBy  = preEnrollment.StudentId
-            });
-
-            cls.AvailableSeats--;
-            cls.UpdatedAt = DateTime.UtcNow;
-
-            if (!string.IsNullOrWhiteSpace(preEnrollment.CouponCode))
-            {
-                var coupon = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Code == preEnrollment.CouponCode));
-                if (coupon != null)
-                {
-                    coupon.UsageCount++;
-                    coupon.UpdatedAt = DateTime.UtcNow;
-                }
-            }
-
-            await _context.SaveChangesAsync();
-
+            await _context.BeginTransactionAsync();
             try
             {
-                var student = await _userManager.FindByIdAsync(preEnrollment.StudentId!);
-                var studentName = student != null ? $"{student.FirstName} {student.LastName}".Trim() : "A student";
+                tx.Status    = PaymentTransactionStatus.Success;
+                tx.UpdatedAt = DateTime.UtcNow;
 
-                if (!string.IsNullOrWhiteSpace(cls.InstructorId))
+                var preEnrollment = await _context.PreEnrollments.FirstOrDefaultAsync(p => p.Id == tx.PreEnrollmentId);
+                if (preEnrollment == null || preEnrollment.PaymentStatus != PaymentStatus.Pending)
                 {
-                    await _notificationService.CreateAsync(
-                        cls.InstructorId,
-                        "New Enrollment",
-                        $"{studentName} enrolled in \"{cls.ClassName}\".",
-                        $"/Instructor/ClassStudents/{cls.Id}");
+                    await _context.SaveChangesAsync();
+                    await _context.CommitTransactionAsync();
+                    return Result<bool>.Ok(true, "Payment received (already enrolled).");
                 }
 
-                if (!string.IsNullOrWhiteSpace(student?.Email))
+                var cls = await _context.Classes.FirstOrDefaultAsync(c => c.Id == preEnrollment.ClassId);
+                if (cls == null)
+                    return Result<bool>.Fail("Class not found.");
+
+                preEnrollment.PaymentStatus = PaymentStatus.Paid;
+                preEnrollment.UpdatedAt     = DateTime.UtcNow;
+                preEnrollment.UpdatedBy     = preEnrollment.StudentId;
+
+                _context.Enrollments.Add(new Enrollment
                 {
-                    await _emailService.SendEmailAsync(
-                        subject: $"Enrollment Confirmed — {cls.ClassName}",
-                        message: BuildEnrollmentEmail(studentName, cls.ClassName ?? ""),
-                        toEmails: new List<string> { student.Email });
+                    ClassId    = preEnrollment.ClassId,
+                    StudentId  = preEnrollment.StudentId,
+                    EnrolledAt = DateTime.UtcNow,
+                    CreatedAt  = DateTime.UtcNow,
+                    CreatedBy  = preEnrollment.StudentId
+                });
+
+                cls.AvailableSeats--;
+                cls.UpdatedAt = DateTime.UtcNow;
+
+                if (!string.IsNullOrWhiteSpace(preEnrollment.CouponCode))
+                {
+                    var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.Code == preEnrollment.CouponCode);
+                    if (coupon != null)
+                    {
+                        coupon.UsageCount++;
+                        coupon.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
+
+                await _context.SaveChangesAsync();
+                await _context.CommitTransactionAsync();
+
+                try
+                {
+                    var student = await _userManager.FindByIdAsync(preEnrollment.StudentId!);
+                    var studentName = student != null ? $"{student.FirstName} {student.LastName}".Trim() : "A student";
+
+                    if (!string.IsNullOrWhiteSpace(cls.InstructorId))
+                    {
+                        await _notificationService.CreateAsync(
+                            cls.InstructorId,
+                            "New Enrollment",
+                            $"{studentName} enrolled in \"{cls.ClassName}\".",
+                            $"/Instructor/ClassStudents/{cls.Id}");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(student?.Email))
+                    {
+                        await _emailService.SendEmailAsync(
+                            subject: $"Enrollment Confirmed — {cls.ClassName}",
+                            message: BuildEnrollmentEmail(studentName, cls.ClassName ?? ""),
+                            toEmails: new List<string> { student.Email });
+                    }
+                }
+                catch { /* don't fail payment if notification/email throws */ }
+
+                return Result<bool>.Ok(true, "Payment successful! You are now enrolled.");
             }
-            catch { /* don't fail payment if notification/email throws */ }
-
-            return Result<bool>.Ok(true, "Payment successful! You are now enrolled.");
+            catch
+            {
+                await _context.RollbackTransactionAsync();
+                return Result<bool>.Fail("Payment processing failed. Please contact support.");
+            }
         }
 
         public async Task<Result<bool>> HandleCancelAsync(int txId)
         {
-            var tx = await _executor.FirstOrDefaultAsync(_context.PaymentTransactions.Where(t => t.Id == txId));
+            var tx = await _context.PaymentTransactions.FirstOrDefaultAsync(t => t.Id == txId);
             if (tx == null) return Result<bool>.Fail("Transaction not found.");
 
             if (tx.Status == PaymentTransactionStatus.Pending)

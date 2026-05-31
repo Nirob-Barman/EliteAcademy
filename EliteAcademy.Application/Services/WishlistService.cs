@@ -8,24 +8,22 @@ using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class WishlistService : IWishlistService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserManager _userManager;
         private readonly IUserContextService _userContextService;
 
         public WishlistService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor executor,
             IUserManager userManager,
             IUserContextService userContextService)
         {
             _context = context;
-            _executor = executor;
             _userManager = userManager;
             _userContextService = userContextService;
         }
@@ -33,7 +31,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<WishlistDto>>> GetMyWishlistAsync()
         {
             var studentId = _userContextService.UserId!;
-            var items = await _executor.ToListAsync(_context.Wishlists.Where(w => w.StudentId == studentId), noTracking: true);
+            var items = await _context.Wishlists.AsNoTracking().Where(w => w.StudentId == studentId).ToListAsync();
 
             var users = await _userManager.GetAllUsersAsync();
             var userMap = users.ToDictionary(u => u.Id ?? "", u => $"{u.FirstName} {u.LastName}".Trim());
@@ -41,7 +39,7 @@ namespace EliteAcademy.Application.Services
             var dtos = new List<WishlistDto>();
             foreach (var item in items)
             {
-                var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == item.ClassId), noTracking: true);
+                var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == item.ClassId);
                 var instructorName = cls?.InstructorId != null
                     ? userMap.GetValueOrDefault(cls.InstructorId, "")
                     : "";
@@ -54,7 +52,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<HashSet<int>>> GetMyWishlistedClassIdsAsync()
         {
             var studentId = _userContextService.UserId!;
-            var ids = (await _executor.ToListAsync(_context.Wishlists.Where(w => w.StudentId == studentId), noTracking: true))
+            var ids = (await _context.Wishlists.AsNoTracking().Where(w => w.StudentId == studentId).ToListAsync())
                 .Select(w => w.ClassId)
                 .ToHashSet();
 
@@ -65,19 +63,19 @@ namespace EliteAcademy.Application.Services
         {
             var studentId = _userContextService.UserId!;
 
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId), noTracking: true);
+            var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == classId);
             if (cls == null || cls.Status != ClassStatus.Approved)
                 return Result<bool>.Fail("Class not available.");
 
-            var alreadyWishlisted = await _executor.AnyAsync(_context.Wishlists.Where(w => w.StudentId == studentId && w.ClassId == classId));
+            var alreadyWishlisted = await _context.Wishlists.AnyAsync(w => w.StudentId == studentId && w.ClassId == classId);
             if (alreadyWishlisted)
                 return Result<bool>.Fail("Already in wishlist.");
 
-            var alreadyEnrolled = await _executor.AnyAsync(_context.Enrollments.Where(e => e.StudentId == studentId && e.ClassId == classId));
+            var alreadyEnrolled = await _context.Enrollments.AnyAsync(e => e.StudentId == studentId && e.ClassId == classId);
             if (alreadyEnrolled)
                 return Result<bool>.Fail("You are already enrolled in this class.");
 
-            _context.Add(new Wishlist
+            _context.Wishlists.Add(new Wishlist
             {
                 ClassId = classId,
                 StudentId = studentId,
@@ -92,13 +90,13 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> RemoveAsync(int wishlistId)
         {
             var studentId = _userContextService.UserId!;
-            var item = await _executor.FirstOrDefaultAsync(_context.Wishlists.Where(w => w.Id == wishlistId), noTracking: true);
+            var item = await _context.Wishlists.AsNoTracking().FirstOrDefaultAsync(w => w.Id == wishlistId);
             if (item == null)
                 return Result<bool>.Fail("Wishlist item not found.");
             if (item.StudentId != studentId)
                 return Result<bool>.Fail("Not authorized.");
 
-            _context.Remove(item);
+            _context.Wishlists.Remove(item);
             await _context.SaveChangesAsync();
 
             return Result<bool>.Ok(true, "Removed from wishlist.");

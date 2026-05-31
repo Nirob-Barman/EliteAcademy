@@ -8,21 +8,28 @@ using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
 using EliteAcademy.Tests.Helpers;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 
 namespace EliteAcademy.Tests.Services;
 
 public class WishlistServiceTests
 {
-    private readonly Mock<IApplicationDbContext> _ctx      = new();
-    private readonly Mock<IAsyncQueryExecutor>   _exec     = new();
-    private readonly Mock<IUserManager>          _userMgr  = new();
-    private readonly Mock<IUserContextService>   _userCtx  = new();
+    private readonly Mock<IApplicationDbContext> _ctx     = new();
+    private readonly Mock<IUserManager>          _userMgr = new();
+    private readonly Mock<IUserContextService>   _userCtx = new();
 
     private const string StudentId = "student-1";
 
     private WishlistService CreateSut() =>
-        new(_ctx.Object, _exec.Object, _userMgr.Object, _userCtx.Object);
+        new(_ctx.Object, _userMgr.Object, _userCtx.Object);
+
+    private void SetupDbSet<T>(System.Linq.Expressions.Expression<Func<IApplicationDbContext, DbSet<T>>> prop,
+        List<T> data) where T : class
+    {
+        var mock = MockDbSet.Create(data);
+        _ctx.Setup(prop).Returns(mock.Object);
+    }
 
     // ── AddAsync ────────────────────────────────────────────────────────────
 
@@ -30,10 +37,7 @@ public class WishlistServiceTests
     public async Task AddAsync_ClassNotFound_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Classes).Returns(MockQueryable.Of<Class>());
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Class>>(), true, default))
-             .ReturnsAsync((Class?)null);
+        SetupDbSet(x => x.Classes, new List<Class>());
 
         var result = await CreateSut().AddAsync(99);
 
@@ -45,11 +49,10 @@ public class WishlistServiceTests
     public async Task AddAsync_ClassNotApproved_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Classes).Returns(MockQueryable.Of(
-            new Class { Id = 1, Status = ClassStatus.Pending }));
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Class>>(), true, default))
-             .ReturnsAsync(new Class { Id = 1, Status = ClassStatus.Pending });
+        SetupDbSet(x => x.Classes, new List<Class>
+        {
+            new() { Id = 1, Status = ClassStatus.Pending }
+        });
 
         var result = await CreateSut().AddAsync(1);
 
@@ -61,15 +64,14 @@ public class WishlistServiceTests
     public async Task AddAsync_AlreadyWishlisted_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Classes).Returns(MockQueryable.Of(
-            new Class { Id = 1, Status = ClassStatus.Approved }));
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Class>>(), true, default))
-             .ReturnsAsync(new Class { Id = 1, Status = ClassStatus.Approved });
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of<Wishlist>());
-        _exec.Setup(x => x.AnyAsync(
-                It.IsAny<IQueryable<Wishlist>>(), default))
-             .ReturnsAsync(true);
+        SetupDbSet(x => x.Classes, new List<Class>
+        {
+            new() { Id = 1, Status = ClassStatus.Approved }
+        });
+        SetupDbSet(x => x.Wishlists, new List<Wishlist>
+        {
+            new() { StudentId = StudentId, ClassId = 1 }
+        });
 
         var result = await CreateSut().AddAsync(1);
 
@@ -81,17 +83,15 @@ public class WishlistServiceTests
     public async Task AddAsync_AlreadyEnrolled_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Classes).Returns(MockQueryable.Of(
-            new Class { Id = 1, Status = ClassStatus.Approved }));
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Class>>(), true, default))
-             .ReturnsAsync(new Class { Id = 1, Status = ClassStatus.Approved });
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of<Wishlist>());
-        _ctx.Setup(x => x.Enrollments).Returns(MockQueryable.Of<Enrollment>());
-        _exec.SetupSequence(x => x.AnyAsync(It.IsAny<IQueryable<Wishlist>>(), default))
-             .ReturnsAsync(false);
-        _exec.Setup(x => x.AnyAsync(It.IsAny<IQueryable<Enrollment>>(), default))
-             .ReturnsAsync(true);
+        SetupDbSet(x => x.Classes, new List<Class>
+        {
+            new() { Id = 1, Status = ClassStatus.Approved }
+        });
+        SetupDbSet(x => x.Wishlists,    new List<Wishlist>());
+        SetupDbSet(x => x.Enrollments, new List<Enrollment>
+        {
+            new() { StudentId = StudentId, ClassId = 1 }
+        });
 
         var result = await CreateSut().AddAsync(1);
 
@@ -103,24 +103,20 @@ public class WishlistServiceTests
     public async Task AddAsync_ValidClass_AddsAndReturnsOk()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Classes).Returns(MockQueryable.Of(
-            new Class { Id = 1, Status = ClassStatus.Approved }));
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Class>>(), true, default))
-             .ReturnsAsync(new Class { Id = 1, Status = ClassStatus.Approved });
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of<Wishlist>());
-        _ctx.Setup(x => x.Enrollments).Returns(MockQueryable.Of<Enrollment>());
-        _exec.Setup(x => x.AnyAsync(It.IsAny<IQueryable<Wishlist>>(), default))
-             .ReturnsAsync(false);
-        _exec.Setup(x => x.AnyAsync(It.IsAny<IQueryable<Enrollment>>(), default))
-             .ReturnsAsync(false);
+        var mockWishlists = MockDbSet.Create(new List<Wishlist>());
+        SetupDbSet(x => x.Classes, new List<Class>
+        {
+            new() { Id = 1, Status = ClassStatus.Approved }
+        });
+        _ctx.Setup(x => x.Wishlists).Returns(mockWishlists.Object);
+        SetupDbSet(x => x.Enrollments, new List<Enrollment>());
         _ctx.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(1);
 
         var result = await CreateSut().AddAsync(1);
 
         result.Success.Should().BeTrue();
         result.Message.Should().Be("Added to wishlist.");
-        _ctx.Verify(x => x.Add(It.Is<Wishlist>(w =>
+        mockWishlists.Verify(x => x.Add(It.Is<Wishlist>(w =>
             w.ClassId == 1 && w.StudentId == StudentId)), Times.Once);
         _ctx.Verify(x => x.SaveChangesAsync(default), Times.Once);
     }
@@ -131,10 +127,7 @@ public class WishlistServiceTests
     public async Task RemoveAsync_ItemNotFound_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of<Wishlist>());
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Wishlist>>(), true, default))
-             .ReturnsAsync((Wishlist?)null);
+        SetupDbSet(x => x.Wishlists, new List<Wishlist>());
 
         var result = await CreateSut().RemoveAsync(99);
 
@@ -146,10 +139,10 @@ public class WishlistServiceTests
     public async Task RemoveAsync_NotOwner_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of<Wishlist>());
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Wishlist>>(), true, default))
-             .ReturnsAsync(new Wishlist { Id = 1, StudentId = "other-student" });
+        SetupDbSet(x => x.Wishlists, new List<Wishlist>
+        {
+            new() { Id = 1, StudentId = "other-student" }
+        });
 
         var result = await CreateSut().RemoveAsync(1);
 
@@ -162,17 +155,15 @@ public class WishlistServiceTests
     {
         var item = new Wishlist { Id = 1, StudentId = StudentId, ClassId = 5 };
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of(item));
-        _exec.Setup(x => x.FirstOrDefaultAsync(
-                It.IsAny<IQueryable<Wishlist>>(), true, default))
-             .ReturnsAsync(item);
+        var mockWishlists = MockDbSet.Create(new List<Wishlist> { item });
+        _ctx.Setup(x => x.Wishlists).Returns(mockWishlists.Object);
         _ctx.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(1);
 
         var result = await CreateSut().RemoveAsync(1);
 
         result.Success.Should().BeTrue();
         result.Message.Should().Be("Removed from wishlist.");
-        _ctx.Verify(x => x.Remove(item), Times.Once);
+        mockWishlists.Verify(x => x.Remove(item), Times.Once);
         _ctx.Verify(x => x.SaveChangesAsync(default), Times.Once);
     }
 
@@ -182,16 +173,11 @@ public class WishlistServiceTests
     public async Task GetMyWishlistedClassIdsAsync_ReturnsCorrectIds()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of(
-            new Wishlist { StudentId = StudentId, ClassId = 1 },
-            new Wishlist { StudentId = StudentId, ClassId = 3 }));
-        _exec.Setup(x => x.ToListAsync(
-                It.IsAny<IQueryable<Wishlist>>(), true, default))
-             .ReturnsAsync(new List<Wishlist>
-             {
-                 new() { StudentId = StudentId, ClassId = 1 },
-                 new() { StudentId = StudentId, ClassId = 3 }
-             });
+        SetupDbSet(x => x.Wishlists, new List<Wishlist>
+        {
+            new() { StudentId = StudentId, ClassId = 1 },
+            new() { StudentId = StudentId, ClassId = 3 }
+        });
 
         var result = await CreateSut().GetMyWishlistedClassIdsAsync();
 
@@ -205,12 +191,8 @@ public class WishlistServiceTests
     public async Task GetMyWishlistAsync_EmptyWishlist_ReturnsEmptyList()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        _ctx.Setup(x => x.Wishlists).Returns(MockQueryable.Of<Wishlist>());
-        _exec.Setup(x => x.ToListAsync(
-                It.IsAny<IQueryable<Wishlist>>(), true, default))
-             .ReturnsAsync(new List<Wishlist>());
-        _userMgr.Setup(x => x.GetAllUsersAsync())
-                .ReturnsAsync(new List<AppUser>());
+        SetupDbSet(x => x.Wishlists, new List<Wishlist>());
+        _userMgr.Setup(x => x.GetAllUsersAsync()).ReturnsAsync(new List<AppUser>());
 
         var result = await CreateSut().GetMyWishlistAsync();
 

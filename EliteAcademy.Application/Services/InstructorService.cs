@@ -9,26 +9,24 @@ using EliteAcademy.Domain.Entities;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class InstructorService : IInstructorService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserManager _userManager;
         private readonly IUserContextService _userContextService;
         private readonly IFileStorage _fileStorage;
 
         public InstructorService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor executor,
             IUserManager userManager,
             IUserContextService userContextService,
             IFileStorage fileStorage)
         {
             _context            = context;
-            _executor           = executor;
             _userManager        = userManager;
             _userContextService = userContextService;
             _fileStorage        = fileStorage;
@@ -71,16 +69,16 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<InstructorDashboardDto>> GetDashboardAsync()
         {
             var instructorId = _userContextService.UserId!;
-            var classes = await _executor.ToListAsync(_context.Classes.Where(c => c.InstructorId == instructorId), noTracking: true);
+            var classes = await _context.Classes.AsNoTracking().Where(c => c.InstructorId == instructorId).ToListAsync();
 
             var classIds = classes.Select(c => c.Id).ToHashSet();
 
             var enrollments = classIds.Any()
-                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)), noTracking: true)
+                ? await _context.Enrollments.AsNoTracking().Where(e => classIds.Contains(e.ClassId)).ToListAsync()
                 : new List<Enrollment>();
 
             var paidPreEnrollments = classIds.Any()
-                ? await _executor.ToListAsync(_context.PreEnrollments.Where(p => classIds.Contains(p.ClassId) && p.PaymentStatus == PaymentStatus.Paid), noTracking: true)
+                ? await _context.PreEnrollments.AsNoTracking().Where(p => classIds.Contains(p.ClassId) && p.PaymentStatus == PaymentStatus.Paid).ToListAsync()
                 : new List<PreEnrollment>();
 
             var totalRevenue = paidPreEnrollments
@@ -129,11 +127,11 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<ClassStudentDto>>> GetClassStudentsAsync(int classId)
         {
             var instructorId = _userContextService.UserId!;
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId), noTracking: true);
+            var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == classId);
             if (cls == null || cls.InstructorId != instructorId)
                 return Result<List<ClassStudentDto>>.Fail("Class not found.");
 
-            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == classId), noTracking: true);
+            var enrollments = await _context.Enrollments.AsNoTracking().Where(e => e.ClassId == classId).ToListAsync();
 
             var users = await _userManager.GetAllUsersAsync();
             var userMap = users.ToDictionary(u => u.Id ?? "", u => u);
@@ -158,12 +156,13 @@ namespace EliteAcademy.Application.Services
             var instructors = (await _userManager.GetUsersByRoleAsync("Instructor")).ToList();
             var instructorIds = instructors.Select(u => u.Id ?? "").ToHashSet();
 
-            var allClasses = await _executor.ToListAsync(
-                _context.Classes.Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId ?? "")), noTracking: true);
+            var allClasses = await _context.Classes.AsNoTracking()
+                .Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId ?? ""))
+                .ToListAsync();
 
             var classIds = allClasses.Select(c => c.Id).ToHashSet();
             var allEnrollments = classIds.Any()
-                ? await _executor.ToListAsync(_context.Enrollments.Where(e => classIds.Contains(e.ClassId)), noTracking: true)
+                ? await _context.Enrollments.AsNoTracking().Where(e => classIds.Contains(e.ClassId)).ToListAsync()
                 : new List<Enrollment>();
 
             var classCountMap = allClasses

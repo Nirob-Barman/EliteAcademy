@@ -4,28 +4,26 @@ using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class NotificationService : INotificationService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserContextService _userContextService;
 
         public NotificationService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor executor,
             IUserContextService userContextService)
         {
             _context            = context;
-            _executor           = executor;
             _userContextService = userContextService;
         }
 
         public async Task CreateAsync(string userId, string title, string message, string? link = null)
         {
-            _context.Add(new AppNotification
+            _context.AppNotifications.Add(new AppNotification
             {
                 UserId    = userId,
                 Title     = title,
@@ -42,14 +40,14 @@ namespace EliteAcademy.Application.Services
             var userId = _userContextService.UserId;
             if (userId == null) return Result<int>.Ok(0);
 
-            var count = await _executor.CountAsync(_context.AppNotifications.Where(n => n.UserId == userId && !n.IsRead));
+            var count = await _context.AppNotifications.CountAsync(n => n.UserId == userId && !n.IsRead);
             return Result<int>.Ok(count);
         }
 
         public async Task<Result<List<NotificationDto>>> GetMyAsync()
         {
             var userId = _userContextService.UserId!;
-            var items = await _executor.ToListAsync(_context.AppNotifications
+            var items = await _context.AppNotifications.AsNoTracking()
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt)
                 .Take(50)
@@ -61,7 +59,8 @@ namespace EliteAcademy.Application.Services
                     IsRead    = n.IsRead,
                     Link      = n.Link,
                     CreatedAt = n.CreatedAt
-                }), noTracking: true);
+                })
+                .ToListAsync();
 
             return Result<List<NotificationDto>>.Ok(items);
         }
@@ -69,7 +68,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> MarkAllReadAsync()
         {
             var userId = _userContextService.UserId!;
-            var unread = await _executor.ToListAsync(_context.AppNotifications.Where(n => n.UserId == userId && !n.IsRead));
+            var unread = await _context.AppNotifications.Where(n => n.UserId == userId && !n.IsRead).ToListAsync();
 
             foreach (var n in unread)
             {

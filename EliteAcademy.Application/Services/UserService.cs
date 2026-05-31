@@ -7,6 +7,7 @@ using EliteAcademy.Application.Interfaces.Identity;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Account;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
@@ -19,11 +20,10 @@ namespace EliteAcademy.Application.Services
         private readonly IFileStorage         _fileStorage;
         private readonly IUserContextService  _userContextService;
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor  _executor;
 
         public UserService(IUserManager userManager, ISignInManager signInManager, IRoleManager roleManager,
             IEmailService emailService, IFileStorage fileStorage, IUserContextService userContextService,
-            IApplicationDbContext context, IAsyncQueryExecutor executor)
+            IApplicationDbContext context)
         {
             _userManager        = userManager;
             _signInManager      = signInManager;
@@ -32,7 +32,6 @@ namespace EliteAcademy.Application.Services
             _fileStorage        = fileStorage;
             _userContextService = userContextService;
             _context            = context;
-            _executor           = executor;
         }
 
 
@@ -122,7 +121,7 @@ namespace EliteAcademy.Application.Services
 
         private async Task RecordLoginAuditAsync(string? userId, bool success, string? errorMessage)
         {
-            _context.Add(new LoginAudit
+            _context.LoginAudits.Add(new LoginAudit
             {
                 Id           = Guid.NewGuid(),
                 UserId       = userId,
@@ -141,19 +140,19 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<List<LoginHistoryItemDto>>.Fail("User not authenticated.");
 
-            var records = await _executor.ToListAsync(
-                _context.LoginAudits
-                    .Where(x => x.UserId == userId)
-                    .OrderByDescending(x => x.LoginTime)
-                    .Take(50)
-                    .Select(x => new LoginHistoryItemDto
-                    {
-                        LoginTime    = x.LoginTime,
-                        IPAddress    = x.IPAddress,
-                        UserAgent    = x.UserAgent,
-                        IsSuccessful = x.IsSuccessful,
-                        ErrorMessage = x.ErrorMessage
-                    }), noTracking: true);
+            var records = await _context.LoginAudits.AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.LoginTime)
+                .Take(50)
+                .Select(x => new LoginHistoryItemDto
+                {
+                    LoginTime    = x.LoginTime,
+                    IPAddress    = x.IPAddress,
+                    UserAgent    = x.UserAgent,
+                    IsSuccessful = x.IsSuccessful,
+                    ErrorMessage = x.ErrorMessage
+                })
+                .ToListAsync();
 
             return Result<List<LoginHistoryItemDto>>.Ok(records);
         }

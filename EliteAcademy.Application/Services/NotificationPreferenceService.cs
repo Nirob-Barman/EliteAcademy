@@ -4,22 +4,20 @@ using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class NotificationPreferenceService : INotificationPreferenceService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserContextService _userContextService;
 
         public NotificationPreferenceService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor executor,
             IUserContextService userContextService)
         {
             _context            = context;
-            _executor           = executor;
             _userContextService = userContextService;
         }
 
@@ -29,7 +27,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<NotificationPreferenceDto>.Fail("User not authenticated.");
 
-            var pref = await _executor.FirstOrDefaultAsync(_context.NotificationPreferences.Where(x => x.UserId == userId), noTracking: true);
+            var pref = await _context.NotificationPreferences.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
 
             if (pref == null)
                 pref = new NotificationPreference { UserId = userId };
@@ -52,7 +50,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(userId))
                 return Result<bool>.Fail("User not authenticated.");
 
-            var pref = await _executor.FirstOrDefaultAsync(_context.NotificationPreferences.Where(x => x.UserId == userId));
+            var pref = await _context.NotificationPreferences.FirstOrDefaultAsync(x => x.UserId == userId);
 
             if (pref == null)
             {
@@ -64,7 +62,7 @@ namespace EliteAcademy.Application.Services
                 pref.EmailOnPasswordChange    = dto.EmailOnPasswordChange;
                 pref.InAppOnEnrollment        = dto.InAppOnEnrollment;
                 pref.InAppOnAnnouncement      = dto.InAppOnAnnouncement;
-                _context.Add(pref);
+                _context.NotificationPreferences.Add(pref);
             }
             else
             {

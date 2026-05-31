@@ -5,31 +5,29 @@ using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class CouponService : ICouponService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor _executor;
         private readonly IUserContextService _userContextService;
         private readonly IAuditLogService _auditLogService;
 
         public CouponService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor executor,
             IUserContextService userContextService,
             IAuditLogService auditLogService)
         {
             _context            = context;
-            _executor           = executor;
             _userContextService = userContextService;
             _auditLogService    = auditLogService;
         }
 
         public async Task<Result<List<CouponDto>>> GetAllAsync()
         {
-            var all = (await _executor.ToListAsync(_context.Coupons, noTracking: true))
+            var all = (await _context.Coupons.AsNoTracking().ToListAsync())
                 .Select(CouponMapper.ToDto)
                 .ToList();
             return Result<List<CouponDto>>.Ok(all);
@@ -37,7 +35,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<CouponDto?>> GetByIdAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id), noTracking: true);
+            var entity = await _context.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
             return entity == null
                 ? Result<CouponDto?>.Fail("Coupon not found.")
                 : Result<CouponDto?>.Ok(CouponMapper.ToDto(entity));
@@ -46,12 +44,12 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<bool>> CreateAsync(CouponFormDto dto)
         {
             var code = dto.Code.Trim().ToUpper();
-            if (await _executor.AnyAsync(_context.Coupons.Where(c => c.Code == code)))
+            if (await _context.Coupons.AnyAsync(c => c.Code == code))
                 return Result<bool>.FailField("Code", "This coupon code already exists.");
 
             var entity = CouponMapper.ToEntity(dto);
             entity.CreatedBy = _userContextService.UserId;
-            _context.Add(entity);
+            _context.Coupons.Add(entity);
             await _context.SaveChangesAsync();
 
             await _auditLogService.LogAsync("Coupon", "Create",
@@ -62,12 +60,12 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> UpdateAsync(int id, CouponFormDto dto)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id));
+            var entity = await _context.Coupons.FirstOrDefaultAsync(c => c.Id == id);
             if (entity == null)
                 return Result<bool>.Fail("Coupon not found.");
 
             var code = dto.Code.Trim().ToUpper();
-            if (await _executor.AnyAsync(_context.Coupons.Where(c => c.Code == code && c.Id != id)))
+            if (await _context.Coupons.AnyAsync(c => c.Code == code && c.Id != id))
                 return Result<bool>.FailField("Code", "This coupon code is already used.");
 
             var oldCode = entity.Code;
@@ -89,12 +87,12 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> DeleteAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id), noTracking: true);
+            var entity = await _context.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
             if (entity == null)
                 return Result<bool>.Fail("Coupon not found.");
 
             var code = entity.Code;
-            _context.Remove(entity);
+            _context.Coupons.Remove(entity);
             await _context.SaveChangesAsync();
 
             await _auditLogService.LogAsync("Coupon", "Delete",
@@ -105,7 +103,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> ToggleActiveAsync(int id)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Id == id));
+            var entity = await _context.Coupons.FirstOrDefaultAsync(c => c.Id == id);
             if (entity == null)
                 return Result<bool>.Fail("Coupon not found.");
 
@@ -125,7 +123,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<decimal>> ValidateAndGetDiscountAsync(string code, decimal price)
         {
             var upper = code.Trim().ToUpper();
-            var coupon = await _executor.FirstOrDefaultAsync(_context.Coupons.Where(c => c.Code == upper), noTracking: true);
+            var coupon = await _context.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Code == upper);
 
             if (coupon == null)
                 return Result<decimal>.Fail("Invalid coupon code.");

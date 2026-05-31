@@ -12,13 +12,13 @@ using EliteAcademy.Domain.Entities;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Services
 {
     public class AdminService : IAdminService
     {
         private readonly IApplicationDbContext _context;
-        private readonly IAsyncQueryExecutor   _executor;
         private readonly IUserManager          _userManager;
         private readonly IUserContextService   _userContextService;
         private readonly INotificationService  _notificationService;
@@ -27,7 +27,6 @@ namespace EliteAcademy.Application.Services
 
         public AdminService(
             IApplicationDbContext context,
-            IAsyncQueryExecutor   executor,
             IUserManager          userManager,
             IUserContextService   userContextService,
             INotificationService  notificationService,
@@ -35,7 +34,6 @@ namespace EliteAcademy.Application.Services
             IEmailService         emailService)
         {
             _context             = context;
-            _executor            = executor;
             _userManager         = userManager;
             _userContextService  = userContextService;
             _notificationService = notificationService;
@@ -48,8 +46,8 @@ namespace EliteAcademy.Application.Services
             var allUsers    = (await _userManager.GetAllUsersAsync()).ToList();
             var instructors = (await _userManager.GetUsersByRoleAsync("Instructor")).ToList();
             var students    = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
-            var allClasses  = await _executor.ToListAsync(_context.Classes, noTracking: true);
-            var pendingApps = await _executor.CountAsync(_context.InstructorApplications.Where(a => a.Status == InstructorApplicationStatus.Pending));
+            var allClasses  = await _context.Classes.AsNoTracking().ToListAsync();
+            var pendingApps = await _context.InstructorApplications.CountAsync(a => a.Status == InstructorApplicationStatus.Pending);
 
             return Result<AdminDashboardDto>.Ok(new AdminDashboardDto
             {
@@ -116,7 +114,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<List<ClassDto>>> GetAllClassesAsync()
         {
-            var classes = await _executor.ToListAsync(_context.Classes, noTracking: true);
+            var classes = await _context.Classes.AsNoTracking().ToListAsync();
             var users   = await _userManager.GetAllUsersAsync();
             var instructorMap = users.ToDictionary(
                 u => u.Id ?? "",
@@ -131,7 +129,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<bool>> ApproveClassAsync(int classId)
         {
-            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
+            var entity = await _context.Classes.FirstOrDefaultAsync(c => c.Id == classId);
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 
@@ -185,7 +183,7 @@ namespace EliteAcademy.Application.Services
             if (string.IsNullOrWhiteSpace(feedback))
                 return Result<bool>.Fail("Feedback is required when rejecting a class.");
 
-            var entity = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId));
+            var entity = await _context.Classes.FirstOrDefaultAsync(c => c.Id == classId);
             if (entity == null)
                 return Result<bool>.Fail("Class not found.");
 
@@ -239,8 +237,8 @@ namespace EliteAcademy.Application.Services
         {
             var students    = await _userManager.GetUsersByRoleAsync("Student");
             var instructors = await _userManager.GetUsersByRoleAsync("Instructor");
-            var enrollments = await _executor.CountAsync(_context.Enrollments);
-            var classes     = await _executor.CountAsync(_context.Classes.Where(c => c.Status == ClassStatus.Approved));
+            var enrollments = await _context.Enrollments.CountAsync();
+            var classes     = await _context.Classes.CountAsync(c => c.Status == ClassStatus.Approved);
 
             return Result<PlatformStatsDto>.Ok(new PlatformStatsDto
             {
@@ -256,7 +254,7 @@ namespace EliteAcademy.Application.Services
         public async Task<Result<List<AdminStudentDto>>> GetAllStudentsAsync()
         {
             var students    = (await _userManager.GetUsersByRoleAsync("Student")).ToList();
-            var enrollments = await _executor.ToListAsync(_context.Enrollments, noTracking: true);
+            var enrollments = await _context.Enrollments.AsNoTracking().ToListAsync();
 
             var dtos = students.Select(s => new AdminStudentDto
             {
@@ -307,7 +305,7 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<AdminClassEnrollmentsDto>> GetClassEnrollmentsAsync(int classId)
         {
-            var cls = await _executor.FirstOrDefaultAsync(_context.Classes.Where(c => c.Id == classId), noTracking: true);
+            var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == classId);
             if (cls == null)
                 return Result<AdminClassEnrollmentsDto>.Fail("Class not found.");
 
@@ -316,7 +314,7 @@ namespace EliteAcademy.Application.Services
                 ? $"{inst.FirstName} {inst.LastName}".Trim()
                 : "Unknown";
 
-            var enrollments = await _executor.ToListAsync(_context.Enrollments.Where(e => e.ClassId == classId), noTracking: true);
+            var enrollments = await _context.Enrollments.AsNoTracking().Where(e => e.ClassId == classId).ToListAsync();
 
             var rows = enrollments.Select(e =>
             {
@@ -345,14 +343,14 @@ namespace EliteAcademy.Application.Services
 
         public async Task<Result<RevenueReportDto>> GetRevenueReportAsync(int year)
         {
-            var transactions = await _executor.ToListAsync(_context.PaymentTransactions.Where(
-                t => t.Status == PaymentTransactionStatus.Success && t.CreatedAt.Year == year), noTracking: true);
+            var transactions = await _context.PaymentTransactions.AsNoTracking().Where(
+                t => t.Status == PaymentTransactionStatus.Success && t.CreatedAt.Year == year).ToListAsync();
 
             var preEnrollmentIds = transactions.Select(t => t.PreEnrollmentId).Distinct().ToList();
-            var preEnrollments   = await _executor.ToListAsync(_context.PreEnrollments.Where(p => preEnrollmentIds.Contains(p.Id)), noTracking: true);
+            var preEnrollments   = await _context.PreEnrollments.AsNoTracking().Where(p => preEnrollmentIds.Contains(p.Id)).ToListAsync();
 
             var classIds = preEnrollments.Select(p => p.ClassId).Distinct().ToList();
-            var classes  = await _executor.ToListAsync(_context.Classes.Where(c => classIds.Contains(c.Id)), noTracking: true);
+            var classes  = await _context.Classes.AsNoTracking().Where(c => classIds.Contains(c.Id)).ToListAsync();
 
             var allUsers     = (await _userManager.GetAllUsersAsync()).ToDictionary(u => u.Id ?? "");
             var classMap     = classes.ToDictionary(c => c.Id);

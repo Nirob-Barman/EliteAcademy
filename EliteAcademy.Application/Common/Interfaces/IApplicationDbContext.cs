@@ -1,33 +1,34 @@
-﻿using EliteAcademy.Domain.Entities;
+using EliteAcademy.Domain.Entities;
 using EliteAcademy.Domain.Entities.Account;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
+using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Common.Interfaces
 {
     public interface IApplicationDbContext
     {
-        IQueryable<LoginAudit> LoginAudits { get; }
-        IQueryable<Class> Classes { get; }
-        IQueryable<Enrollment> Enrollments { get; }
-        IQueryable<PreEnrollment> PreEnrollments { get; }
-        IQueryable<Review> Reviews { get; }
-        IQueryable<Wishlist> Wishlists { get; }
-        IQueryable<Coupon> Coupons { get; }
-        IQueryable<QaQuestion> QaQuestions { get; }
-        IQueryable<QaAnswer> QaAnswers { get; }
-        IQueryable<AppNotification> AppNotifications { get; }
-        IQueryable<AuditLog> AuditLogs { get; }
-        IQueryable<PaymentGateway> PaymentGateways { get; }
-        IQueryable<PaymentTransaction> PaymentTransactions { get; }
-        IQueryable<Announcement> Announcements { get; }
-        IQueryable<InstructorApplication> InstructorApplications { get; }
-        IQueryable<NotificationPreference> NotificationPreferences { get; }
-
-        void Add<TEntity>(TEntity entity) where TEntity : class;
-        void AddRange<TEntity>(IEnumerable<TEntity> entities) where TEntity : class;
-        void Remove<TEntity>(TEntity entity) where TEntity : class;
+        DbSet<LoginAudit> LoginAudits { get; }
+        DbSet<Class> Classes { get; }
+        DbSet<Enrollment> Enrollments { get; }
+        DbSet<PreEnrollment> PreEnrollments { get; }
+        DbSet<Review> Reviews { get; }
+        DbSet<Wishlist> Wishlists { get; }
+        DbSet<Coupon> Coupons { get; }
+        DbSet<QaQuestion> QaQuestions { get; }
+        DbSet<QaAnswer> QaAnswers { get; }
+        DbSet<AppNotification> AppNotifications { get; }
+        DbSet<AuditLog> AuditLogs { get; }
+        DbSet<PaymentGateway> PaymentGateways { get; }
+        DbSet<PaymentTransaction> PaymentTransactions { get; }
+        DbSet<Announcement> Announcements { get; }
+        DbSet<InstructorApplication> InstructorApplications { get; }
+        DbSet<NotificationPreference> NotificationPreferences { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+        Task BeginTransactionAsync(CancellationToken cancellationToken = default);
+        Task CommitTransactionAsync(CancellationToken cancellationToken = default);
+        Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
     }
 }
