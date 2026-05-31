@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EliteAcademy.Application\EliteAcademy.Application.csproj" />
+    <ProjectReference Include="..\EliteAcademy.Domain\EliteAcademy.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
