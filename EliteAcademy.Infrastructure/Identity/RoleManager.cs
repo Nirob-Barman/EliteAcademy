@@ -15,7 +15,6 @@ namespace EliteAcademy.Infrastructure.Identity
 
         public async Task<List<string>> GetAllRolesAsync()
         {
-            //return await _roleManager.Roles.Where(r => r.Name != "Admin").Select(r => r.Name!).ToListAsync();
             return await _roleManager.Roles.Select(r => r.Name!).ToListAsync();
         }
 

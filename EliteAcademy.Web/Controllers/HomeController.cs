@@ -7,6 +7,7 @@ using EliteAcademy.Web.Models;
 using EliteAcademy.Web.ViewModels.Home;
 using EliteAcademy.Web.ViewModels.Student;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -53,6 +54,9 @@ namespace EliteAcademy.Web.Controllers
         }
 
         public new IActionResult NotFound() => View();
+
+        [AllowAnonymous]
+        public IActionResult Privacy() => View();
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

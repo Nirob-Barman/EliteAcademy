@@ -25,7 +25,6 @@ namespace EliteAcademy.Application.DependencyInjection
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IAuditLogService, AuditLogService>();
             services.AddScoped<IPaymentGatewayService, PaymentGatewayService>();
-            services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
 
             return services;
         }

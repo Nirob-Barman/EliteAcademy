@@ -4,7 +4,6 @@ using EliteAcademy.Application.Interfaces.Email;
 using EliteAcademy.Application.Interfaces.Identity;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Entities;
 using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
 using MediatR;

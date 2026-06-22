@@ -31,19 +31,6 @@ namespace EliteAcademy.Web.ViewModels.Mappers
             Price          = dto.Price
         };
 
-        public static InstructorProfileDto ToDto(InstructorProfileViewModel vm) => new()
-        {
-            FirstName = vm.FirstName,
-            LastName  = vm.LastName,
-            ImageUrl  = vm.ExistingPhotoUrl
-        };
 
-        public static InstructorProfileViewModel ToVm(InstructorProfileDto dto) => new()
-        {
-            FirstName       = dto.FirstName ?? "",
-            LastName        = dto.LastName  ?? "",
-            Email           = dto.Email,
-            ExistingPhotoUrl = dto.ImageUrl
-        };
     }
 }
