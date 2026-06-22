@@ -1,7 +1,19 @@
-﻿using EliteAcademy.Application.DTOs.Notification;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.DTOs.Notification;
+using EliteAcademy.Application.Features.NotificationPreference.Commands.UpdateNotificationPreferences;
+using EliteAcademy.Application.Features.NotificationPreference.Queries.GetMyNotificationPreferences;
+using EliteAcademy.Application.Features.User.Commands.ChangePassword;
+using EliteAcademy.Application.Features.User.Commands.ForgotPassword;
+using EliteAcademy.Application.Features.User.Commands.Login;
+using EliteAcademy.Application.Features.User.Commands.Logout;
+using EliteAcademy.Application.Features.User.Commands.Register;
+using EliteAcademy.Application.Features.User.Commands.ResetPassword;
+using EliteAcademy.Application.Features.User.Commands.UpdateMyProfile;
+using EliteAcademy.Application.Features.User.Queries.GeneratePasswordResetToken;
+using EliteAcademy.Application.Features.User.Queries.GetMyLoginHistory;
+using EliteAcademy.Application.Features.User.Queries.GetMyProfile;
 using EliteAcademy.Web.ViewModels.Account;
 using EliteAcademy.Web.ViewModels.Mappers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,13 +21,11 @@ namespace EliteAcademy.Web.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly IUserService _userService;
-        private readonly INotificationPreferenceService _notifPrefService;
+        private readonly IMediator _mediator;
 
-        public AccountController(IUserService userService, INotificationPreferenceService notifPrefService)
+        public AccountController(IMediator mediator)
         {
-            _userService      = userService;
-            _notifPrefService = notifPrefService;
+            _mediator = mediator;
         }
         public IActionResult Index()
         {
@@ -47,7 +57,7 @@ namespace EliteAcademy.Web.Controllers
                 fileName = model.Photo.FileName;
             }
 
-            var result = await _userService.RegisterAsync(dto, stream, fileName);
+            var result = await _mediator.Send(new RegisterCommand(dto, stream, fileName));
 
 
             if (!result.Success)
@@ -86,7 +96,7 @@ namespace EliteAcademy.Web.Controllers
             }
 
             var dto = AccountMapper.ToDto(model);
-            var result = await _userService.LoginAsync(dto);
+            var result = await _mediator.Send(new LoginCommand(dto));
 
             if (!result.Success)
             {
@@ -119,7 +129,7 @@ namespace EliteAcademy.Web.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _userService.ChangePasswordAsync(vm.CurrentPassword!, vm.NewPassword!);
+            var result = await _mediator.Send(new ChangePasswordCommand(vm.CurrentPassword!, vm.NewPassword!));
             if (!result.Success)
             {
                 TempData["ErrorMessage"] = result.Message ?? "Password change failed.";
@@ -145,14 +155,14 @@ namespace EliteAcademy.Web.Controllers
             var callbackUrl = Url.Action("ResetPassword", "Account",
                 values: null, protocol: Request.Scheme)!;
 
-            var tokenResult = await _userService.GeneratePasswordResetTokenAsync(model.Email!);
+            var tokenResult = await _mediator.Send(new GeneratePasswordResetTokenQuery(model.Email!));
             if (tokenResult.Success)
             {
                 var resetUrl = Url.Action("ResetPassword", "Account",
                     new { email = model.Email, token = tokenResult.Data },
                     protocol: Request.Scheme)!;
 
-                await _userService.ForgotPasswordAsync(model.Email!, resetUrl);
+                await _mediator.Send(new ForgotPasswordCommand(model.Email!, resetUrl));
             }
 
             TempData["SuccessMessage"] = "If that email is registered, a reset link has been sent.";
@@ -179,7 +189,7 @@ namespace EliteAcademy.Web.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var result = await _userService.ResetPasswordAsync(model.Email!, model.Token!, model.Password!);
+            var result = await _mediator.Send(new ResetPasswordCommand(model.Email!, model.Token!, model.Password!));
             if (!result.Success)
             {
                 TempData["ErrorMessage"] = result.Message ?? "Password reset failed.";
@@ -194,7 +204,7 @@ namespace EliteAcademy.Web.Controllers
         [Authorize]
         public async Task<IActionResult> Profile()
         {
-            var result = await _userService.GetMyProfileAsync();
+            var result = await _mediator.Send(new GetMyProfileQuery());
             if (!result.Success)
             {
                 TempData["ErrorMessage"] = result.Message;
@@ -241,7 +251,7 @@ namespace EliteAcademy.Web.Controllers
                 fileName = vm.PhotoFile.FileName;
             }
 
-            var result = await _userService.UpdateMyProfileAsync(dto, stream, fileName);
+            var result = await _mediator.Send(new UpdateMyProfileCommand(dto, stream, fileName));
             if (!result.Success)
             {
                 TempData["ErrorMessage"] = result.Message ?? "Update failed.";
@@ -256,7 +266,7 @@ namespace EliteAcademy.Web.Controllers
         [Authorize]
         public async Task<IActionResult> LoginHistory()
         {
-            var result = await _userService.GetMyLoginHistoryAsync();
+            var result = await _mediator.Send(new GetMyLoginHistoryQuery());
             if (!result.Success)
             {
                 TempData["ErrorMessage"] = result.Message;
@@ -269,7 +279,7 @@ namespace EliteAcademy.Web.Controllers
         [Authorize]
         public async Task<IActionResult> NotificationPreferences()
         {
-            var result = await _notifPrefService.GetMyPreferencesAsync();
+            var result = await _mediator.Send(new GetMyNotificationPreferencesQuery());
             if (!result.Success)
             {
                 TempData["ErrorMessage"] = result.Message;
@@ -294,7 +304,7 @@ namespace EliteAcademy.Web.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _notifPrefService.UpdateMyPreferencesAsync(new NotificationPreferenceDto
+            var result = await _mediator.Send(new UpdateNotificationPreferencesCommand(new NotificationPreferenceDto
             {
                 EmailOnEnrollment        = vm.EmailOnEnrollment,
                 EmailOnAnnouncement      = vm.EmailOnAnnouncement,
@@ -303,7 +313,7 @@ namespace EliteAcademy.Web.Controllers
                 EmailOnPasswordChange    = vm.EmailOnPasswordChange,
                 InAppOnEnrollment        = vm.InAppOnEnrollment,
                 InAppOnAnnouncement      = vm.InAppOnAnnouncement,
-            });
+            }));
 
             if (!result.Success)
             {
@@ -319,7 +329,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _userService.LogoutAsync();
+            await _mediator.Send(new LogoutCommand());
             return RedirectToAction("Index", "Home");
         }
 

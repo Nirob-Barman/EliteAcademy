@@ -1,7 +1,12 @@
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Admin.Queries.GetPlatformStats;
+using EliteAcademy.Application.Features.Class.Queries.GetApprovedClasses;
+using EliteAcademy.Application.Features.Coupon.Queries.GetAllCoupons;
+using EliteAcademy.Application.Features.Instructor.Queries.GetPublicInstructorList;
+using EliteAcademy.Application.Features.Review.Queries.GetReviewSummary;
 using EliteAcademy.Web.Models;
 using EliteAcademy.Web.ViewModels.Home;
 using EliteAcademy.Web.ViewModels.Student;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -9,33 +14,20 @@ namespace EliteAcademy.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly IInstructorService _instructorService;
-        private readonly IClassService _classService;
-        private readonly IAdminService _adminService;
-        private readonly IReviewService _reviewService;
-        private readonly ICouponService _couponService;
+        private readonly IMediator _mediator;
 
-        public HomeController(
-            IInstructorService instructorService,
-            IClassService classService,
-            IAdminService adminService,
-            IReviewService reviewService,
-            ICouponService couponService)
+        public HomeController(IMediator mediator)
         {
-            _instructorService = instructorService;
-            _classService      = classService;
-            _adminService      = adminService;
-            _reviewService     = reviewService;
-            _couponService     = couponService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var classesResult     = await _classService.GetApprovedAsync();
-            var statsResult       = await _adminService.GetPlatformStatsAsync();
-            var instructorsResult = await _instructorService.GetPublicInstructorListAsync();
-            var summaryResult     = await _reviewService.GetReviewSummaryAsync();
-            var couponsResult     = await _couponService.GetAllAsync();
+            var classesResult     = await _mediator.Send(new GetApprovedClassesQuery());
+            var statsResult       = await _mediator.Send(new GetPlatformStatsQuery());
+            var instructorsResult = await _mediator.Send(new GetPublicInstructorListQuery());
+            var summaryResult     = await _mediator.Send(new GetReviewSummaryQuery());
+            var couponsResult     = await _mediator.Send(new GetAllCouponsQuery());
 
             var classes = classesResult.Data ?? new();
             var summary = summaryResult.Data ?? new();

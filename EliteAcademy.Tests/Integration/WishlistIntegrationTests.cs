@@ -1,11 +1,13 @@
-using EliteAcademy.Application.Services;
+using EliteAcademy.Application.Features.Wishlist.Commands.AddToWishlist;
+using EliteAcademy.Application.Features.Wishlist.Commands.RemoveFromWishlist;
+using EliteAcademy.Application.Features.Wishlist.Queries.GetMyWishlistedClassIds;
+using EliteAcademy.Application.Interfaces;
+using EliteAcademy.Application.Interfaces.Identity;
 using EliteAcademy.Domain.Entities.Account;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
 using EliteAcademy.Infrastructure.Persistence;
-using EliteAcademy.Application.Interfaces;
-using EliteAcademy.Application.Interfaces.Identity;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -15,7 +17,7 @@ namespace EliteAcademy.Tests.Integration;
 public class WishlistIntegrationTests : IDisposable
 {
     private readonly ApplicationDbContext _db;
-    private readonly Mock<IUserManager> _userMgr  = new();
+    private readonly Mock<IUserManager>        _userMgr  = new();
     private readonly Mock<IUserContextService> _userCtx  = new();
     private const string StudentId = "student-1";
 
@@ -31,8 +33,6 @@ public class WishlistIntegrationTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private WishlistService CreateSut() => new(_db, _userMgr.Object, _userCtx.Object);
-
     private void Seed(Action<ApplicationDbContext> action)
     {
         action(_db);
@@ -43,14 +43,15 @@ public class WishlistIntegrationTests : IDisposable
     private void SeedClass(int id, ClassStatus status = ClassStatus.Approved, int seats = 10) =>
         Seed(db => db.Classes.Add(new Class { Id = id, ClassName = $"Class {id}", Status = status, AvailableSeats = seats }));
 
-    // ── AddAsync ─────────────────────────────────────────────────────────
+    // ── AddToWishlistHandler ──────────────────────────────────────────────
 
     [Fact]
-    public async Task AddAsync_ValidClass_PersistsToDatabase()
+    public async Task AddToWishlist_ValidClass_PersistsToDatabase()
     {
         SeedClass(1);
+        var handler = new AddToWishlistHandler(_db, _userCtx.Object);
 
-        var result = await CreateSut().AddAsync(1);
+        var result = await handler.Handle(new AddToWishlistCommand(1), default);
 
         result.Success.Should().BeTrue();
         _db.Wishlists.Count().Should().Be(1);
@@ -59,73 +60,80 @@ public class WishlistIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task AddAsync_ClassNotFound_DoesNotPersist()
+    public async Task AddToWishlist_ClassNotFound_DoesNotPersist()
     {
-        var result = await CreateSut().AddAsync(99);
+        var handler = new AddToWishlistHandler(_db, _userCtx.Object);
+
+        var result = await handler.Handle(new AddToWishlistCommand(99), default);
 
         result.Success.Should().BeFalse();
         _db.Wishlists.Count().Should().Be(0);
     }
 
     [Fact]
-    public async Task AddAsync_AlreadyWishlisted_ReturnsFail()
+    public async Task AddToWishlist_AlreadyWishlisted_ReturnsFail()
     {
         SeedClass(1);
         Seed(db => db.Wishlists.Add(new Wishlist { ClassId = 1, StudentId = StudentId }));
+        var handler = new AddToWishlistHandler(_db, _userCtx.Object);
 
-        var result = await CreateSut().AddAsync(1);
+        var result = await handler.Handle(new AddToWishlistCommand(1), default);
 
         result.Success.Should().BeFalse();
         _db.Wishlists.Count().Should().Be(1);
     }
 
     [Fact]
-    public async Task AddAsync_AlreadyEnrolled_ReturnsFail()
+    public async Task AddToWishlist_AlreadyEnrolled_ReturnsFail()
     {
         SeedClass(1);
         Seed(db => db.Enrollments.Add(new Enrollment { ClassId = 1, StudentId = StudentId }));
+        var handler = new AddToWishlistHandler(_db, _userCtx.Object);
 
-        var result = await CreateSut().AddAsync(1);
+        var result = await handler.Handle(new AddToWishlistCommand(1), default);
 
         result.Success.Should().BeFalse();
         _db.Wishlists.Count().Should().Be(0);
     }
 
-    // ── RemoveAsync ───────────────────────────────────────────────────────
+    // ── RemoveFromWishlistHandler ─────────────────────────────────────────
 
     [Fact]
-    public async Task RemoveAsync_ValidItem_RemovesFromDatabase()
+    public async Task RemoveFromWishlist_ValidItem_RemovesFromDatabase()
     {
         Seed(db => db.Wishlists.Add(new Wishlist { Id = 1, ClassId = 1, StudentId = StudentId }));
+        var handler = new RemoveFromWishlistHandler(_db, _userCtx.Object);
 
-        var result = await CreateSut().RemoveAsync(1);
+        var result = await handler.Handle(new RemoveFromWishlistCommand(1), default);
 
         result.Success.Should().BeTrue();
         _db.Wishlists.Count().Should().Be(0);
     }
 
     [Fact]
-    public async Task RemoveAsync_WrongStudent_DoesNotRemove()
+    public async Task RemoveFromWishlist_WrongStudent_DoesNotRemove()
     {
         Seed(db => db.Wishlists.Add(new Wishlist { Id = 1, ClassId = 1, StudentId = "other-student" }));
+        var handler = new RemoveFromWishlistHandler(_db, _userCtx.Object);
 
-        var result = await CreateSut().RemoveAsync(1);
+        var result = await handler.Handle(new RemoveFromWishlistCommand(1), default);
 
         result.Success.Should().BeFalse();
         _db.Wishlists.Count().Should().Be(1);
     }
 
-    // ── GetMyWishlistedClassIdsAsync ──────────────────────────────────────
+    // ── GetMyWishlistedClassIdsHandler ────────────────────────────────────
 
     [Fact]
-    public async Task GetMyWishlistedClassIdsAsync_ReturnsOnlyCurrentStudentIds()
+    public async Task GetMyWishlistedClassIds_ReturnsOnlyCurrentStudentIds()
     {
         Seed(db => db.Wishlists.AddRange(
             new Wishlist { ClassId = 1, StudentId = StudentId },
             new Wishlist { ClassId = 2, StudentId = StudentId },
             new Wishlist { ClassId = 3, StudentId = "other-student" }));
+        var handler = new GetMyWishlistedClassIdsHandler(_db, _userCtx.Object);
 
-        var result = await CreateSut().GetMyWishlistedClassIdsAsync();
+        var result = await handler.Handle(new GetMyWishlistedClassIdsQuery(), default);
 
         result.Success.Should().BeTrue();
         result.Data.Should().BeEquivalentTo(new HashSet<int> { 1, 2 });

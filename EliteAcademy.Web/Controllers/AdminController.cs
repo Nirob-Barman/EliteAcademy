@@ -1,9 +1,21 @@
 using System.Text;
 using EliteAcademy.Application.DTOs.Admin;
 using EliteAcademy.Application.DTOs.Class;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Admin.Commands.ApproveClass;
+using EliteAcademy.Application.Features.Admin.Commands.BanStudent;
+using EliteAcademy.Application.Features.Admin.Commands.RejectClass;
+using EliteAcademy.Application.Features.Admin.Commands.UnbanStudent;
+using EliteAcademy.Application.Features.Admin.Queries.GetAdminDashboard;
+using EliteAcademy.Application.Features.Admin.Queries.GetAllClasses;
+using EliteAcademy.Application.Features.Admin.Queries.GetAllStudents;
+using EliteAcademy.Application.Features.Admin.Queries.GetClassEnrollments;
+using EliteAcademy.Application.Features.Admin.Queries.GetRevenueReport;
+using EliteAcademy.Application.Features.InstructorApplication.Commands.ApproveInstructorApplication;
+using EliteAcademy.Application.Features.InstructorApplication.Commands.RejectInstructorApplication;
+using EliteAcademy.Application.Features.InstructorApplication.Queries.GetAllInstructorApplications;
 using EliteAcademy.Web.ViewModels.Admin;
 using EliteAcademy.Web.ViewModels.InstructorApplication;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,26 +24,22 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
-        private readonly IAdminService                   _adminService;
-        private readonly IInstructorApplicationService   _applicationService;
+        private readonly IMediator _mediator;
 
-        public AdminController(
-            IAdminService                 adminService,
-            IInstructorApplicationService applicationService)
+        public AdminController(IMediator mediator)
         {
-            _adminService       = adminService;
-            _applicationService = applicationService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Dashboard()
         {
-            var result = await _adminService.GetDashboardAsync();
+            var result = await _mediator.Send(new GetAdminDashboardQuery());
             return View(result.Data ?? new AdminDashboardDto());
         }
 
         public async Task<IActionResult> Classes()
         {
-            var result = await _adminService.GetAllClassesAsync();
+            var result = await _mediator.Send(new GetAllClassesQuery());
             return View(result.Data ?? new List<ClassDto>());
         }
 
@@ -39,7 +47,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveClass(int id)
         {
-            var result = await _adminService.ApproveClassAsync(id);
+            var result = await _mediator.Send(new ApproveClassCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Classes));
         }
@@ -54,7 +62,7 @@ namespace EliteAcademy.Web.Controllers
                 return RedirectToAction(nameof(Classes));
             }
 
-            var result = await _adminService.RejectClassAsync(vm.ClassId, vm.Feedback);
+            var result = await _mediator.Send(new RejectClassCommand(vm.ClassId, vm.Feedback));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Classes));
         }
@@ -63,7 +71,7 @@ namespace EliteAcademy.Web.Controllers
 
         public async Task<IActionResult> Students()
         {
-            var result = await _adminService.GetAllStudentsAsync();
+            var result = await _mediator.Send(new GetAllStudentsQuery());
             return View(result.Data ?? new List<AdminStudentDto>());
         }
 
@@ -71,7 +79,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BanStudent(string id)
         {
-            var result = await _adminService.BanStudentAsync(id);
+            var result = await _mediator.Send(new BanStudentCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Students));
         }
@@ -80,7 +88,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UnbanStudent(string id)
         {
-            var result = await _adminService.UnbanStudentAsync(id);
+            var result = await _mediator.Send(new UnbanStudentCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Students));
         }
@@ -89,7 +97,7 @@ namespace EliteAcademy.Web.Controllers
 
         public async Task<IActionResult> ClassEnrollments(int id)
         {
-            var result = await _adminService.GetClassEnrollmentsAsync(id);
+            var result = await _mediator.Send(new GetClassEnrollmentsQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Message;
@@ -100,7 +108,7 @@ namespace EliteAcademy.Web.Controllers
 
         public async Task<IActionResult> ExportEnrollments(int id)
         {
-            var result = await _adminService.GetClassEnrollmentsAsync(id);
+            var result = await _mediator.Send(new GetClassEnrollmentsQuery(id));
             if (!result.Success || result.Data == null)
             {
                 TempData["Error"] = result.Message;
@@ -122,14 +130,14 @@ namespace EliteAcademy.Web.Controllers
         public async Task<IActionResult> RevenueReport(int? year)
         {
             var reportYear = year ?? DateTime.UtcNow.Year;
-            var result     = await _adminService.GetRevenueReportAsync(reportYear);
+            var result     = await _mediator.Send(new GetRevenueReportQuery(reportYear));
             return View(result.Data ?? new RevenueReportDto { Year = reportYear });
         }
 
         public async Task<IActionResult> ExportRevenueReport(int? year)
         {
             var reportYear = year ?? DateTime.UtcNow.Year;
-            var result     = await _adminService.GetRevenueReportAsync(reportYear);
+            var result     = await _mediator.Send(new GetRevenueReportQuery(reportYear));
             if (!result.Success || result.Data == null)
             {
                 TempData["Error"] = result.Message;
@@ -169,7 +177,7 @@ namespace EliteAcademy.Web.Controllers
 
         public async Task<IActionResult> InstructorApplications()
         {
-            var result = await _applicationService.GetAllAsync();
+            var result = await _mediator.Send(new GetAllInstructorApplicationsQuery());
             return View(result.Data ?? new List<Application.DTOs.InstructorApplication.InstructorApplicationDto>());
         }
 
@@ -177,7 +185,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveApplication(int id)
         {
-            var result = await _applicationService.ApproveAsync(id);
+            var result = await _mediator.Send(new ApproveInstructorApplicationCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(InstructorApplications));
         }
@@ -192,7 +200,7 @@ namespace EliteAcademy.Web.Controllers
                 return RedirectToAction(nameof(InstructorApplications));
             }
 
-            var result = await _applicationService.RejectAsync(vm.ApplicationId, vm.AdminNotes);
+            var result = await _mediator.Send(new RejectInstructorApplicationCommand(vm.ApplicationId, vm.AdminNotes));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(InstructorApplications));
         }

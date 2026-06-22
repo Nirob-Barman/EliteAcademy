@@ -1,6 +1,9 @@
-using EliteAcademy.Application.DTOs.Class;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Class.Queries.GetApprovedClasses;
+using EliteAcademy.Application.Features.Review.Queries.GetReviewSummary;
+using EliteAcademy.Application.Features.Student.Queries.GetEnrollmentStatus;
+using EliteAcademy.Application.Features.Wishlist.Queries.GetMyWishlistedClassIds;
 using EliteAcademy.Web.ViewModels.Student;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,36 +12,26 @@ namespace EliteAcademy.Web.Controllers
     [AllowAnonymous]
     public class ClassesController : Controller
     {
-        private readonly IClassService _classService;
-        private readonly IStudentService _studentService;
-        private readonly IReviewService _reviewService;
-        private readonly IWishlistService _wishlistService;
+        private readonly IMediator _mediator;
 
-        public ClassesController(
-            IClassService classService,
-            IStudentService studentService,
-            IReviewService reviewService,
-            IWishlistService wishlistService)
+        public ClassesController(IMediator mediator)
         {
-            _classService    = classService;
-            _studentService  = studentService;
-            _reviewService   = reviewService;
-            _wishlistService = wishlistService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var classResult   = await _classService.GetApprovedAsync();
-            var classes       = classResult.Data ?? new List<ClassDto>();
-            var summaryResult = await _reviewService.GetReviewSummaryAsync();
+            var classResult   = await _mediator.Send(new GetApprovedClassesQuery());
+            var classes       = classResult.Data ?? new List<Application.DTOs.Class.ClassDto>();
+            var summaryResult = await _mediator.Send(new GetReviewSummaryQuery());
             var summary       = summaryResult.Data ?? new();
 
             if (User.Identity?.IsAuthenticated == true && User.IsInRole("Student"))
             {
-                var statusResult    = await _studentService.GetEnrollmentStatusAsync();
+                var statusResult    = await _mediator.Send(new GetEnrollmentStatusQuery());
                 var selected        = statusResult.Success ? statusResult.Data.Selected : new HashSet<int>();
                 var enrolled        = statusResult.Success ? statusResult.Data.Enrolled : new HashSet<int>();
-                var wishlistResult  = await _wishlistService.GetMyWishlistedClassIdsAsync();
+                var wishlistResult  = await _mediator.Send(new GetMyWishlistedClassIdsQuery());
                 var wishlisted      = wishlistResult.Success ? wishlistResult.Data : new HashSet<int>();
 
                 return View(classes.Select(c => new ClassIndexItemViewModel

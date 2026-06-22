@@ -1,4 +1,5 @@
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Admin.Queries.GetPlatformStats;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,16 +8,16 @@ namespace EliteAcademy.Web.Controllers
     [AllowAnonymous]
     public class AboutController : Controller
     {
-        private readonly IAdminService _adminService;
+        private readonly IMediator _mediator;
 
-        public AboutController(IAdminService adminService)
+        public AboutController(IMediator mediator)
         {
-            _adminService = adminService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var result = await _adminService.GetPlatformStatsAsync();
+            var result = await _mediator.Send(new GetPlatformStatsQuery());
             return View(result.Data);
         }
     }

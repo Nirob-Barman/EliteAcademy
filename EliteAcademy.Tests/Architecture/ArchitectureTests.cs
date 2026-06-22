@@ -1,5 +1,5 @@
 using System.Reflection;
-using EliteAcademy.Application.Services;
+using EliteAcademy.Application.Features.Wishlist.Commands.AddToWishlist;
 using EliteAcademy.Domain.Common;
 using EliteAcademy.Infrastructure.Persistence;
 using FluentAssertions;
@@ -10,7 +10,7 @@ namespace EliteAcademy.Tests.Architecture;
 public class ArchitectureTests
 {
     private static readonly Assembly DomainAssembly = typeof(DomainResult<>).Assembly;
-    private static readonly Assembly ApplicationAssembly = typeof(WishlistService).Assembly;
+    private static readonly Assembly ApplicationAssembly = typeof(AddToWishlistHandler).Assembly;
     private static readonly Assembly InfrastructureAssembly = typeof(ApplicationDbContext).Assembly;
 
     // ── Dependency direction ─────────────────────────────────────────────

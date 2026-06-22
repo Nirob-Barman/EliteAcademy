@@ -1,7 +1,6 @@
 using EliteAcademy.Application.DTOs.Instructor;
-using EliteAcademy.Application.Interfaces.Services;
-using EliteAcademy.Web.ViewModels.Instructor;
-using EliteAcademy.Web.ViewModels.Mappers;
+using EliteAcademy.Application.Features.Instructor.Queries.GetInstructorDashboard;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,16 +9,16 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Instructor")]
     public class InstructorController : Controller
     {
-        private readonly IInstructorService _instructorService;
+        private readonly IMediator _mediator;
 
-        public InstructorController(IInstructorService instructorService)
+        public InstructorController(IMediator mediator)
         {
-            _instructorService = instructorService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Dashboard()
         {
-            var result = await _instructorService.GetDashboardAsync();
+            var result = await _mediator.Send(new GetInstructorDashboardQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Message;

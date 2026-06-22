@@ -2,9 +2,28 @@ using EliteAcademy.Application.DTOs.Instructor;
 using EliteAcademy.Application.DTOs.QA;
 using EliteAcademy.Application.DTOs.Review;
 using EliteAcademy.Application.DTOs.Student;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Announcement.Queries.GetClassAnnouncements;
+using EliteAcademy.Application.Features.Qa.Commands.AskQuestion;
+using EliteAcademy.Application.Features.Qa.Commands.DeleteQuestion;
+using EliteAcademy.Application.Features.Qa.Queries.GetClassQa;
+using EliteAcademy.Application.Features.Review.Commands.CreateReview;
+using EliteAcademy.Application.Features.Review.Commands.DeleteReview;
+using EliteAcademy.Application.Features.Review.Queries.GetReviewedClassIds;
+using EliteAcademy.Application.Features.Student.Commands.ApplyCoupon;
+using EliteAcademy.Application.Features.Student.Commands.DeleteSelectedClass;
+using EliteAcademy.Application.Features.Student.Commands.PayForClass;
+using EliteAcademy.Application.Features.Student.Commands.RemoveCoupon;
+using EliteAcademy.Application.Features.Student.Commands.SelectClass;
+using EliteAcademy.Application.Features.Student.Queries.GetEnrolledClasses;
+using EliteAcademy.Application.Features.Student.Queries.GetEnrollmentStatus;
+using EliteAcademy.Application.Features.Student.Queries.GetSelectedClasses;
+using EliteAcademy.Application.Features.Student.Queries.GetStudentDashboard;
+using EliteAcademy.Application.Features.Wishlist.Commands.AddToWishlist;
+using EliteAcademy.Application.Features.Wishlist.Commands.RemoveFromWishlist;
+using EliteAcademy.Application.Features.Wishlist.Queries.GetMyWishlist;
 using EliteAcademy.Web.ViewModels.Mappers;
 using EliteAcademy.Web.ViewModels.Student;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,29 +32,16 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Student")]
     public class StudentController : Controller
     {
-        private readonly IStudentService _studentService;
-        private readonly IReviewService _reviewService;
-        private readonly IWishlistService _wishlistService;
-        private readonly IQaService _qaService;
-        private readonly IAnnouncementService _announcementService;
+        private readonly IMediator _mediator;
 
-        public StudentController(
-            IStudentService studentService,
-            IReviewService reviewService,
-            IWishlistService wishlistService,
-            IQaService qaService,
-            IAnnouncementService announcementService)
+        public StudentController(IMediator mediator)
         {
-            _studentService      = studentService;
-            _reviewService       = reviewService;
-            _wishlistService     = wishlistService;
-            _qaService           = qaService;
-            _announcementService = announcementService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Dashboard()
         {
-            var result = await _studentService.GetDashboardAsync();
+            var result = await _mediator.Send(new GetStudentDashboardQuery());
             return View(result.Data ?? new StudentDashboardDto());
         }
 
@@ -43,7 +49,7 @@ namespace EliteAcademy.Web.Controllers
 
         public async Task<IActionResult> Cart()
         {
-            var result = await _studentService.GetSelectedClassesAsync();
+            var result = await _mediator.Send(new GetSelectedClassesQuery());
             return View(result.Data ?? new List<PreEnrollmentDto>());
         }
 
@@ -51,7 +57,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectClass(int classId)
         {
-            var result = await _studentService.SelectClassAsync(classId);
+            var result = await _mediator.Send(new SelectClassCommand(classId));
             if (!result.Success)
                 return BadRequest(result.Message);
             return Ok();
@@ -61,7 +67,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteSelected(int id)
         {
-            var result = await _studentService.DeleteSelectedClassAsync(id);
+            var result = await _mediator.Send(new DeleteSelectedClassCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Cart));
         }
@@ -69,7 +75,7 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> PayForClass(int id)
         {
-            var result = await _studentService.PayForClassAsync(id);
+            var result = await _mediator.Send(new PayForClassCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return result.Success
                 ? RedirectToAction(nameof(EnrolledClasses))
@@ -82,7 +88,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApplyCoupon(int preEnrollmentId, string couponCode)
         {
-            var result = await _studentService.ApplyCouponAsync(preEnrollmentId, couponCode);
+            var result = await _mediator.Send(new ApplyCouponCommand(preEnrollmentId, couponCode));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Cart));
         }
@@ -91,7 +97,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveCoupon(int preEnrollmentId)
         {
-            var result = await _studentService.RemoveCouponAsync(preEnrollmentId);
+            var result = await _mediator.Send(new RemoveCouponCommand(preEnrollmentId));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Cart));
         }
@@ -100,8 +106,8 @@ namespace EliteAcademy.Web.Controllers
 
         public async Task<IActionResult> EnrolledClasses()
         {
-            var enrollmentsResult = await _studentService.GetEnrolledClassesAsync();
-            var reviewedResult    = await _reviewService.GetReviewedClassIdsAsync();
+            var enrollmentsResult = await _mediator.Send(new GetEnrolledClassesQuery());
+            var reviewedResult    = await _mediator.Send(new GetReviewedClassIdsQuery());
 
             return View(new EnrolledClassesViewModel
             {
@@ -115,21 +121,21 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> LeaveReview(int classId)
         {
-            var enrolledResult = await _studentService.GetEnrollmentStatusAsync();
+            var enrolledResult = await _mediator.Send(new GetEnrollmentStatusQuery());
             if (!enrolledResult.Success || !enrolledResult.Data.Enrolled.Contains(classId))
             {
                 TempData["Error"] = "You must be enrolled to leave a review.";
                 return RedirectToAction(nameof(EnrolledClasses));
             }
 
-            var reviewedResult = await _reviewService.GetReviewedClassIdsAsync();
+            var reviewedResult = await _mediator.Send(new GetReviewedClassIdsQuery());
             if (reviewedResult.Data?.Contains(classId) == true)
             {
                 TempData["Error"] = "You have already reviewed this class.";
                 return RedirectToAction(nameof(EnrolledClasses));
             }
 
-            var classesResult = await _studentService.GetEnrolledClassesAsync();
+            var classesResult = await _mediator.Send(new GetEnrolledClassesQuery());
             var cls = classesResult.Data?.FirstOrDefault(e => e.ClassId == classId);
 
             return View(new ReviewFormViewModel
@@ -145,12 +151,12 @@ namespace EliteAcademy.Web.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _reviewService.CreateAsync(new ReviewFormDto
+            var result = await _mediator.Send(new CreateReviewCommand(new ReviewFormDto
             {
                 ClassId = vm.ClassId,
                 Rating  = vm.Rating,
                 Comment = vm.Comment
-            });
+            }));
 
             if (!result.Success)
             {
@@ -166,7 +172,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteReview(int reviewId)
         {
-            var result = await _reviewService.DeleteAsync(reviewId);
+            var result = await _mediator.Send(new DeleteReviewCommand(reviewId));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(EnrolledClasses));
         }
@@ -175,7 +181,7 @@ namespace EliteAcademy.Web.Controllers
 
         public async Task<IActionResult> Wishlist()
         {
-            var result = await _wishlistService.GetMyWishlistAsync();
+            var result = await _mediator.Send(new GetMyWishlistQuery());
             return View(result.Data ?? new());
         }
 
@@ -183,7 +189,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddToWishlist(int classId)
         {
-            var result = await _wishlistService.AddAsync(classId);
+            var result = await _mediator.Send(new AddToWishlistCommand(classId));
             if (!result.Success)
                 return BadRequest(result.Message);
             return Ok();
@@ -193,7 +199,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveFromWishlist(int id)
         {
-            var result = await _wishlistService.RemoveAsync(id);
+            var result = await _mediator.Send(new RemoveFromWishlistCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Wishlist));
         }
@@ -203,19 +209,19 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> ClassQa(int classId)
         {
-            var enrolledResult = await _studentService.GetEnrollmentStatusAsync();
+            var enrolledResult = await _mediator.Send(new GetEnrollmentStatusQuery());
             if (!enrolledResult.Success || !enrolledResult.Data.Enrolled.Contains(classId))
             {
                 TempData["Error"] = "You must be enrolled to view class Q&A.";
                 return RedirectToAction(nameof(EnrolledClasses));
             }
 
-            var enrolledClasses = await _studentService.GetEnrolledClassesAsync();
+            var enrolledClasses = await _mediator.Send(new GetEnrolledClassesQuery());
             var cls = enrolledClasses.Data?.FirstOrDefault(e => e.ClassId == classId);
             ViewBag.ClassName = cls?.ClassName ?? "Class";
             ViewBag.ClassId   = classId;
 
-            var qaResult = await _qaService.GetClassQaAsync(classId);
+            var qaResult = await _mediator.Send(new GetClassQaQuery(classId));
             return View(qaResult.Data ?? new List<QaQuestionDto>());
         }
 
@@ -223,11 +229,11 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AskQuestion(int classId, string questionText)
         {
-            var result = await _qaService.AskAsync(new QaAskDto
+            var result = await _mediator.Send(new AskQuestionCommand(new QaAskDto
             {
                 ClassId      = classId,
                 QuestionText = questionText
-            });
+            }));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(ClassQa), new { classId });
         }
@@ -236,7 +242,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteQuestion(int questionId, int classId)
         {
-            var result = await _qaService.DeleteQuestionAsync(questionId);
+            var result = await _mediator.Send(new DeleteQuestionCommand(questionId));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(ClassQa), new { classId });
         }
@@ -246,19 +252,19 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> ClassAnnouncements(int classId)
         {
-            var enrolledResult = await _studentService.GetEnrollmentStatusAsync();
+            var enrolledResult = await _mediator.Send(new GetEnrollmentStatusQuery());
             if (!enrolledResult.Success || !enrolledResult.Data.Enrolled.Contains(classId))
             {
                 TempData["Error"] = "You must be enrolled to view announcements.";
                 return RedirectToAction(nameof(EnrolledClasses));
             }
 
-            var enrolledClasses = await _studentService.GetEnrolledClassesAsync();
+            var enrolledClasses = await _mediator.Send(new GetEnrolledClassesQuery());
             var cls = enrolledClasses.Data?.FirstOrDefault(e => e.ClassId == classId);
             ViewBag.ClassName = cls?.ClassName ?? "Class";
             ViewBag.ClassId   = classId;
 
-            var result = await _announcementService.GetClassAnnouncementsAsync(classId);
+            var result = await _mediator.Send(new GetClassAnnouncementsQuery(classId));
             return View(result.Data ?? new List<AnnouncementDto>());
         }
 

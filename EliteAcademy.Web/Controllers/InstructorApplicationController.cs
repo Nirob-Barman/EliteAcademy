@@ -1,6 +1,8 @@
 using EliteAcademy.Application.DTOs.InstructorApplication;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.InstructorApplication.Commands.ApplyForInstructor;
+using EliteAcademy.Application.Features.InstructorApplication.Queries.GetMyInstructorApplication;
 using EliteAcademy.Web.ViewModels.InstructorApplication;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,18 +11,18 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Student")]
     public class InstructorApplicationController : Controller
     {
-        private readonly IInstructorApplicationService _service;
+        private readonly IMediator _mediator;
 
-        public InstructorApplicationController(IInstructorApplicationService service)
+        public InstructorApplicationController(IMediator mediator)
         {
-            _service = service;
+            _mediator = mediator;
         }
 
         // GET /InstructorApplication/Apply
         public async Task<IActionResult> Apply()
         {
             // If the student already has an application, redirect to status page
-            var existing = await _service.GetMyApplicationAsync();
+            var existing = await _mediator.Send(new GetMyInstructorApplicationQuery());
             if (existing.Data != null)
                 return RedirectToAction(nameof(MyApplication));
 
@@ -35,12 +37,12 @@ namespace EliteAcademy.Web.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
-            var result = await _service.ApplyAsync(new InstructorApplicationFormDto
+            var result = await _mediator.Send(new ApplyForInstructorCommand(new InstructorApplicationFormDto
             {
                 Bio        = vm.Bio,
                 Expertise  = vm.Expertise,
                 Motivation = vm.Motivation
-            });
+            }));
 
             if (!result.Success)
             {
@@ -55,7 +57,7 @@ namespace EliteAcademy.Web.Controllers
         // GET /InstructorApplication/MyApplication
         public async Task<IActionResult> MyApplication()
         {
-            var result = await _service.GetMyApplicationAsync();
+            var result = await _mediator.Send(new GetMyInstructorApplicationQuery());
             return View(result.Data);   // nullable — view handles null (no application yet)
         }
     }

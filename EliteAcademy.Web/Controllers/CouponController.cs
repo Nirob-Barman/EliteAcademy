@@ -1,6 +1,12 @@
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Coupon.Commands.CreateCoupon;
+using EliteAcademy.Application.Features.Coupon.Commands.DeleteCoupon;
+using EliteAcademy.Application.Features.Coupon.Commands.ToggleCoupon;
+using EliteAcademy.Application.Features.Coupon.Commands.UpdateCoupon;
+using EliteAcademy.Application.Features.Coupon.Queries.GetAllCoupons;
+using EliteAcademy.Application.Features.Coupon.Queries.GetCouponById;
 using EliteAcademy.Web.ViewModels.Coupon;
 using EliteAcademy.Web.ViewModels.Mappers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,16 +15,16 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Admin")]
     public class CouponController : Controller
     {
-        private readonly ICouponService _couponService;
+        private readonly IMediator _mediator;
 
-        public CouponController(ICouponService couponService)
+        public CouponController(IMediator mediator)
         {
-            _couponService = couponService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var result = await _couponService.GetAllAsync();
+            var result = await _mediator.Send(new GetAllCouponsQuery());
             return View(result.Data ?? new());
         }
 
@@ -31,7 +37,7 @@ namespace EliteAcademy.Web.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _couponService.CreateAsync(CouponViewModelMapper.ToDto(vm));
+            var result = await _mediator.Send(new CreateCouponCommand(CouponViewModelMapper.ToDto(vm)));
             if (!result.Success)
             {
                 if (result.FieldErrors?.Any() == true)
@@ -49,7 +55,7 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _couponService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetCouponByIdQuery(id));
             if (!result.Success || result.Data == null)
             {
                 TempData["Error"] = "Coupon not found.";
@@ -64,7 +70,7 @@ namespace EliteAcademy.Web.Controllers
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _couponService.UpdateAsync(id, CouponViewModelMapper.ToDto(vm));
+            var result = await _mediator.Send(new UpdateCouponCommand(id, CouponViewModelMapper.ToDto(vm)));
             if (!result.Success)
             {
                 if (result.FieldErrors?.Any() == true)
@@ -83,7 +89,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _couponService.DeleteAsync(id);
+            var result = await _mediator.Send(new DeleteCouponCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
         }
@@ -92,7 +98,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleActive(int id)
         {
-            var result = await _couponService.ToggleActiveAsync(id);
+            var result = await _mediator.Send(new ToggleCouponCommand(id));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
         }

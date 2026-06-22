@@ -1,9 +1,21 @@
 using EliteAcademy.Application.DTOs.Class;
 using EliteAcademy.Application.DTOs.Instructor;
 using EliteAcademy.Application.DTOs.QA;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Announcement.Commands.CreateAnnouncement;
+using EliteAcademy.Application.Features.Announcement.Commands.DeleteAnnouncement;
+using EliteAcademy.Application.Features.Announcement.Queries.GetClassAnnouncements;
+using EliteAcademy.Application.Features.Class.Commands.CreateClass;
+using EliteAcademy.Application.Features.Class.Commands.UpdateClass;
+using EliteAcademy.Application.Features.Class.Queries.GetClassById;
+using EliteAcademy.Application.Features.Class.Queries.GetClassesByInstructor;
+using EliteAcademy.Application.Features.Instructor.Queries.GetClassStudents;
+using EliteAcademy.Application.Features.Qa.Commands.AnswerQuestion;
+using EliteAcademy.Application.Features.Qa.Commands.DeleteAnswer;
+using EliteAcademy.Application.Features.Qa.Commands.DeleteQuestion;
+using EliteAcademy.Application.Features.Qa.Queries.GetClassQa;
 using EliteAcademy.Web.ViewModels.Instructor;
 using EliteAcademy.Web.ViewModels.Mappers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
@@ -13,28 +25,18 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Instructor")]
     public class InstructorClassController : Controller
     {
-        private readonly IClassService _classService;
-        private readonly IInstructorService _instructorService;
-        private readonly IQaService _qaService;
-        private readonly IAnnouncementService _announcementService;
+        private readonly IMediator _mediator;
 
-        public InstructorClassController(
-            IClassService classService,
-            IInstructorService instructorService,
-            IQaService qaService,
-            IAnnouncementService announcementService)
+        public InstructorClassController(IMediator mediator)
         {
-            _classService        = classService;
-            _instructorService   = instructorService;
-            _qaService           = qaService;
-            _announcementService = announcementService;
+            _mediator = mediator;
         }
 
         // ── Class CRUD ────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Index()
         {
-            var result = await _classService.GetByInstructorAsync();
+            var result = await _mediator.Send(new GetClassesByInstructorQuery());
             return View(result.Data ?? new List<ClassDto>());
         }
 
@@ -57,7 +59,7 @@ namespace EliteAcademy.Web.Controllers
                 fileName = vm.ImageFile.FileName;
             }
 
-            var result = await _classService.CreateAsync(dto, stream, fileName);
+            var result = await _mediator.Send(new CreateClassCommand(dto, stream, fileName));
             if (!result.Success)
             {
                 ModelState.AddModelError("", result.Message ?? "Failed to create class.");
@@ -71,7 +73,7 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _classService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetClassByIdQuery(id));
             if (!result.Success) return NotFound();
             return View(InstructorViewModelMapper.ToEditVm(result.Data!));
         }
@@ -92,7 +94,7 @@ namespace EliteAcademy.Web.Controllers
                 fileName = vm.ImageFile.FileName;
             }
 
-            var result = await _classService.UpdateAsync(dto, stream, fileName);
+            var result = await _mediator.Send(new UpdateClassCommand(dto, stream, fileName));
             if (!result.Success)
             {
                 ModelState.AddModelError("", result.Message ?? "Failed to update class.");
@@ -108,10 +110,10 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Students(int id)
         {
-            var classResult = await _classService.GetByIdAsync(id);
+            var classResult = await _mediator.Send(new GetClassByIdQuery(id));
             if (!classResult.Success) return NotFound();
 
-            var studentsResult = await _instructorService.GetClassStudentsAsync(id);
+            var studentsResult = await _mediator.Send(new GetClassStudentsQuery(id));
             ViewBag.ClassName = classResult.Data!.ClassName;
             ViewBag.ClassId   = id;
             return View(studentsResult.Data ?? new List<ClassStudentDto>());
@@ -120,7 +122,7 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportStudentsCsv(int id)
         {
-            var result = await _instructorService.GetClassStudentsAsync(id);
+            var result = await _mediator.Send(new GetClassStudentsQuery(id));
             if (!result.Success) return NotFound();
 
             var sb = new StringBuilder();
@@ -136,10 +138,10 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Qa(int id)
         {
-            var classResult = await _classService.GetByIdAsync(id);
+            var classResult = await _mediator.Send(new GetClassByIdQuery(id));
             if (!classResult.Success) return NotFound();
 
-            var qaResult = await _qaService.GetClassQaAsync(id);
+            var qaResult = await _mediator.Send(new GetClassQaQuery(id));
             ViewBag.ClassName = classResult.Data!.ClassName;
             ViewBag.ClassId   = id;
             return View(qaResult.Data ?? new List<QaQuestionDto>());
@@ -149,11 +151,11 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AnswerQuestion(int questionId, int classId, string answerText)
         {
-            var result = await _qaService.AnswerAsync(new QaAnswerFormDto
+            var result = await _mediator.Send(new AnswerQuestionCommand(new QaAnswerFormDto
             {
                 QuestionId = questionId,
                 AnswerText = answerText
-            });
+            }));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Qa), new { id = classId });
         }
@@ -162,7 +164,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteQuestion(int questionId, int classId)
         {
-            var result = await _qaService.DeleteQuestionAsync(questionId);
+            var result = await _mediator.Send(new DeleteQuestionCommand(questionId));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Qa), new { id = classId });
         }
@@ -171,7 +173,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAnswer(int answerId, int classId)
         {
-            var result = await _qaService.DeleteAnswerAsync(answerId);
+            var result = await _mediator.Send(new DeleteAnswerCommand(answerId));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Qa), new { id = classId });
         }
@@ -181,10 +183,10 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Announcements(int id)
         {
-            var classResult = await _classService.GetByIdAsync(id);
+            var classResult = await _mediator.Send(new GetClassByIdQuery(id));
             if (!classResult.Success) return NotFound();
 
-            var result = await _announcementService.GetClassAnnouncementsAsync(id);
+            var result = await _mediator.Send(new GetClassAnnouncementsQuery(id));
             ViewBag.ClassName = classResult.Data!.ClassName;
             ViewBag.ClassId   = id;
             return View(result.Data ?? new List<AnnouncementDto>());
@@ -194,12 +196,12 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PostAnnouncement(int classId, string title, string body)
         {
-            var result = await _announcementService.CreateAsync(new AnnouncementFormDto
+            var result = await _mediator.Send(new CreateAnnouncementCommand(new AnnouncementFormDto
             {
                 ClassId = classId,
                 Title   = title,
                 Body    = body
-            });
+            }));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Announcements), new { id = classId });
         }
@@ -208,7 +210,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAnnouncement(int announcementId, int classId)
         {
-            var result = await _announcementService.DeleteAsync(announcementId);
+            var result = await _mediator.Send(new DeleteAnnouncementCommand(announcementId));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Announcements), new { id = classId });
         }

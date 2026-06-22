@@ -8,6 +8,7 @@ An ASP.NET Core 8 MVC online academy platform supporting three roles — **Admin
 - **EF Core 8** — SQL Server (SQLEXPRESS)
 - **ASP.NET Identity** — cookie-based auth
 - **Clean Architecture** — Domain → Application → Infrastructure → Web
+- **CQRS + MediatR** — all use cases implemented as Commands/Queries with handlers
 
 ## Prerequisites
 
@@ -57,7 +58,7 @@ An ASP.NET Core 8 MVC online academy platform supporting three roles — **Admin
 
 ```
 EliteAcademy.Domain/          # Entities, enums — zero dependencies
-EliteAcademy.Application/     # Services, DTOs, interfaces, Result<T>
+EliteAcademy.Application/     # CQRS handlers, DTOs, interfaces, Result<T>
 EliteAcademy.Infrastructure/  # EF Core, Identity, FileStorage, Email, Payments
 EliteAcademy.Web/             # Controllers, Razor views, ViewModels
 ```

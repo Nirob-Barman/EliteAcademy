@@ -1,5 +1,7 @@
 using EliteAcademy.Application.DTOs.Admin;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Admin.Commands.ChangeUserRole;
+using EliteAcademy.Application.Features.Admin.Queries.GetAllUsers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,16 +10,16 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Admin")]
     public class UsersController : Controller
     {
-        private readonly IAdminService _adminService;
+        private readonly IMediator _mediator;
 
-        public UsersController(IAdminService adminService)
+        public UsersController(IMediator mediator)
         {
-            _adminService = adminService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var result = await _adminService.GetAllUsersAsync();
+            var result = await _mediator.Send(new GetAllUsersQuery());
             return View(result.Data ?? new List<AdminUserDto>());
         }
 
@@ -25,7 +27,7 @@ namespace EliteAcademy.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeRole(string userId, string newRole)
         {
-            var result = await _adminService.ChangeUserRoleAsync(userId, newRole);
+            var result = await _mediator.Send(new ChangeUserRoleCommand(userId, newRole));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
         }

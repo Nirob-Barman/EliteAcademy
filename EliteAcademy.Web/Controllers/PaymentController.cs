@@ -1,7 +1,12 @@
 using EliteAcademy.Application.DTOs.Payment;
-using EliteAcademy.Application.Interfaces.Services;
+using EliteAcademy.Application.Features.Payment.Commands.HandlePaymentCancel;
+using EliteAcademy.Application.Features.Payment.Commands.HandlePaymentSuccess;
+using EliteAcademy.Application.Features.Payment.Commands.InitiatePayment;
+using EliteAcademy.Application.Features.PaymentGateway.Queries.GetAllPaymentGateways;
+using EliteAcademy.Application.Features.Student.Queries.GetSelectedClasses;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Web.ViewModels.Student;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,27 +15,21 @@ namespace EliteAcademy.Web.Controllers
     [Authorize(Roles = "Student")]
     public class PaymentController : Controller
     {
-        private readonly IPaymentService _paymentService;
-        private readonly IPaymentGatewayService _gatewayService;
-        private readonly IStudentService _studentService;
         private readonly IUserContextService _userContextService;
+        private readonly IMediator _mediator;
 
         public PaymentController(
-            IPaymentService paymentService,
-            IPaymentGatewayService gatewayService,
-            IStudentService studentService,
-            IUserContextService userContextService)
+            IUserContextService userContextService,
+            IMediator mediator)
         {
-            _paymentService      = paymentService;
-            _gatewayService      = gatewayService;
-            _studentService      = studentService;
-            _userContextService  = userContextService;
+            _userContextService = userContextService;
+            _mediator           = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> Checkout(int id)
         {
-            var selectionsResult = await _studentService.GetSelectedClassesAsync();
+            var selectionsResult = await _mediator.Send(new GetSelectedClassesQuery());
             var preEnrollment = selectionsResult.Data?.FirstOrDefault(p => p.Id == id);
             if (preEnrollment == null)
             {
@@ -38,7 +37,7 @@ namespace EliteAcademy.Web.Controllers
                 return RedirectToAction("Cart", "Student");
             }
 
-            var gatewaysResult = await _gatewayService.GetAllAsync();
+            var gatewaysResult = await _mediator.Send(new GetAllPaymentGatewaysQuery());
             var activeGateways = gatewaysResult.Data?
                 .Where(g => g.IsActive)
                 .ToList() ?? new List<PaymentGatewayDto>();
@@ -69,15 +68,15 @@ namespace EliteAcademy.Web.Controllers
             if (!ModelState.IsValid)
             {
                 // Reload gateways for re-render
-                var gatewaysResult = await _gatewayService.GetAllAsync();
+                var gatewaysResult = await _mediator.Send(new GetAllPaymentGatewaysQuery());
                 vm.Gateways = gatewaysResult.Data?.Where(g => g.IsActive).ToList()
                               ?? new List<PaymentGatewayDto>();
                 return View("Checkout", vm);
             }
 
             var baseUrl = _userContextService.GetBaseUrl();
-            var result  = await _paymentService.InitiateAsync(
-                vm.PreEnrollmentId, vm.SelectedGatewaySlug!, baseUrl);
+            var result  = await _mediator.Send(new InitiatePaymentCommand(
+                vm.PreEnrollmentId, vm.SelectedGatewaySlug!, baseUrl));
 
             if (!result.Success)
             {
@@ -95,7 +94,7 @@ namespace EliteAcademy.Web.Controllers
             var callbackParams = Request.Query
                 .ToDictionary(k => k.Key, v => v.Value.ToString());
 
-            var result = await _paymentService.HandleSuccessAsync(txId, gateway, callbackParams);
+            var result = await _mediator.Send(new HandlePaymentSuccessCommand(txId, gateway, callbackParams));
 
             if (!result.Success)
             {
@@ -111,7 +110,7 @@ namespace EliteAcademy.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Cancel(int txId)
         {
-            await _paymentService.HandleCancelAsync(txId);
+            await _mediator.Send(new HandlePaymentCancelCommand(txId));
             TempData["Error"] = "Payment was cancelled.";
             return View();
         }
