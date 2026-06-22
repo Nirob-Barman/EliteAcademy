@@ -8,7 +8,8 @@ An ASP.NET Core 8 MVC online academy platform supporting three roles — **Admin
 - **EF Core 8** — SQL Server (SQLEXPRESS)
 - **ASP.NET Identity** — cookie-based auth
 - **Clean Architecture** — Domain → Application → Infrastructure → Web
-- **CQRS + MediatR** — all use cases implemented as Commands/Queries with handlers
+- **CQRS + MediatR** — all use cases as Commands/Queries with pipeline behaviors (logging, performance, exception, validation)
+- **FluentValidation** — command validators auto-discovered per feature
 
 ## Prerequisites
 
