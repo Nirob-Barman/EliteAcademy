@@ -17,7 +17,7 @@ namespace EliteAcademy.Application.Services
             IApplicationDbContext context,
             IUserContextService userContextService)
         {
-            _context            = context;
+            _context = context;
             _userContextService = userContextService;
         }
 
@@ -25,11 +25,11 @@ namespace EliteAcademy.Application.Services
         {
             _context.AppNotifications.Add(new AppNotification
             {
-                UserId    = userId,
-                Title     = title,
-                Message   = message,
-                Link      = link,
-                IsRead    = false,
+                UserId = userId,
+                Title = title,
+                Message = message,
+                Link = link,
+                IsRead = false,
                 CreatedAt = DateTime.UtcNow
             });
             await _context.SaveChangesAsync();
@@ -53,11 +53,11 @@ namespace EliteAcademy.Application.Services
                 .Take(50)
                 .Select(n => new NotificationDto
                 {
-                    Id        = n.Id,
-                    Title     = n.Title,
-                    Message   = n.Message,
-                    IsRead    = n.IsRead,
-                    Link      = n.Link,
+                    Id = n.Id,
+                    Title = n.Title,
+                    Message = n.Message,
+                    IsRead = n.IsRead,
+                    Link = n.Link,
                     CreatedAt = n.CreatedAt
                 })
                 .ToListAsync();
@@ -72,7 +72,7 @@ namespace EliteAcademy.Application.Services
 
             foreach (var n in unread)
             {
-                n.IsRead    = true;
+                n.IsRead = true;
                 n.UpdatedAt = DateTime.UtcNow;
             }
 

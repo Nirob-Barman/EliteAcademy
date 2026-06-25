@@ -15,7 +15,7 @@ public class AnnouncementPostedEventHandler : INotificationHandler<AnnouncementP
         IApplicationDbContext context,
         INotificationService notifications)
     {
-        _context       = context;
+        _context = context;
         _notifications = notifications;
     }
 

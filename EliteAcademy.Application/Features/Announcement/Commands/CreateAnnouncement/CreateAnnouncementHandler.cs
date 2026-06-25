@@ -15,7 +15,7 @@ public class CreateAnnouncementHandler : IRequestHandler<CreateAnnouncementComma
 
     public CreateAnnouncementHandler(IApplicationDbContext context, IUserContextService userContextService)
     {
-        _context            = context;
+        _context = context;
         _userContextService = userContextService;
     }
 

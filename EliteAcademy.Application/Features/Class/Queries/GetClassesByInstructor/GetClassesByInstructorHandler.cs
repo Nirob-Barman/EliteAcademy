@@ -20,8 +20,8 @@ public class GetClassesByInstructorHandler : IRequestHandler<GetClassesByInstruc
         IUserManager userManager,
         IUserContextService userContextService)
     {
-        _context            = context;
-        _userManager        = userManager;
+        _context = context;
+        _userManager = userManager;
         _userContextService = userContextService;
     }
 

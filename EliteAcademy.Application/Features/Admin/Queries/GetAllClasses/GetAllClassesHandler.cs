@@ -1,7 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Class;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -21,16 +20,27 @@ public class GetAllClassesHandler : IRequestHandler<GetAllClassesQuery, Result<L
 
     public async Task<Result<List<ClassDto>>> Handle(GetAllClassesQuery request, CancellationToken cancellationToken)
     {
-        var classes = await _context.Classes.AsNoTracking().ToListAsync(cancellationToken);
+        var classDtos = await _context.Classes
+            .AsNoTracking()
+            .Select(c => new ClassDto
+            {
+                Id = c.Id,
+                ClassName = c.ClassName,
+                ClassImage = c.ClassImage,
+                InstructorId = c.InstructorId,
+                AvailableSeats = c.AvailableSeats,
+                Price = c.Price,
+                Status = c.Status,
+                Feedback = c.Feedback
+            })
+            .ToListAsync(cancellationToken);
+
         var users = await _userManager.GetAllUsersAsync();
-        var instructorMap = users.ToDictionary(
-            u => u.Id ?? "",
-            u => $"{u.FirstName} {u.LastName}".Trim());
+        var instructorMap = users.ToDictionary(u => u.Id ?? "", u => $"{u.FirstName} {u.LastName}".Trim());
 
-        var dtos = classes
-            .Select(c => ClassMapper.ToDto(c, instructorMap.GetValueOrDefault(c.InstructorId ?? "")))
-            .ToList();
+        foreach (var dto in classDtos)
+            dto.InstructorName = instructorMap.GetValueOrDefault(dto.InstructorId ?? "");
 
-        return Result<List<ClassDto>>.Ok(dtos);
+        return Result<List<ClassDto>>.Ok(classDtos);
     }
 }

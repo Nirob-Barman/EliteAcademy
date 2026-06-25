@@ -15,7 +15,7 @@ public class ApproveInstructorApplicationHandler : IRequestHandler<ApproveInstru
 
     public ApproveInstructorApplicationHandler(IApplicationDbContext context, IUserManager userManager)
     {
-        _context     = context;
+        _context = context;
         _userManager = userManager;
     }
 
@@ -40,9 +40,9 @@ public class ApproveInstructorApplicationHandler : IRequestHandler<ApproveInstru
         if (!addResult.Succeeded)
             return Result<bool>.Fail(addResult.Errors.FirstOrDefault() ?? "Failed to assign Instructor role.");
 
-        app.Status     = InstructorApplicationStatus.Approved;
+        app.Status = InstructorApplicationStatus.Approved;
         app.ReviewedAt = DateTime.UtcNow;
-        app.UpdatedAt  = DateTime.UtcNow;
+        app.UpdatedAt = DateTime.UtcNow;
 
         app.AddDomainEvent(new InstructorApplicationApprovedEvent(app.ApplicantId!, app.FullName!, app.Email!));
 

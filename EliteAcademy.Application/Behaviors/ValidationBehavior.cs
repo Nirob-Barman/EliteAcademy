@@ -20,7 +20,7 @@ public class ValidationBehavior<TRequest, TResponse>
     {
         if (!_validators.Any()) return await next();
 
-        var context  = new ValidationContext<TRequest>(request);
+        var context = new ValidationContext<TRequest>(request);
         var failures = _validators
             .Select(v => v.Validate(context))
             .SelectMany(r => r.Errors)
@@ -33,7 +33,7 @@ public class ValidationBehavior<TRequest, TResponse>
         if (responseType.IsGenericType &&
             responseType.GetGenericTypeDefinition() == typeof(Result<>))
         {
-            var errors    = failures.Select(f => f.ErrorMessage).ToList();
+            var errors = failures.Select(f => f.ErrorMessage).ToList();
             var failField = responseType.GetMethod("Fail", new[] { typeof(List<string>), typeof(string) });
             if (failField != null)
                 return (TResponse)failField.Invoke(null, new object[] { errors, "Validation failed." })!;

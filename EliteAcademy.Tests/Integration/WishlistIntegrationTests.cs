@@ -18,8 +18,8 @@ namespace EliteAcademy.Tests.Integration;
 public class WishlistIntegrationTests : IDisposable
 {
     private readonly ApplicationDbContext _db;
-    private readonly Mock<IUserManager>        _userMgr  = new();
-    private readonly Mock<IUserContextService> _userCtx  = new();
+    private readonly Mock<IUserManager> _userMgr = new();
+    private readonly Mock<IUserContextService> _userCtx = new();
     private const string StudentId = "student-1";
 
     public WishlistIntegrationTests()

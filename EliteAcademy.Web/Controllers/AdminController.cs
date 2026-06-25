@@ -116,7 +116,7 @@ namespace EliteAcademy.Web.Controllers
             }
 
             var data = result.Data;
-            var csv  = new StringBuilder();
+            var csv = new StringBuilder();
             csv.AppendLine("Student Name,Email,Enrolled At");
             foreach (var row in data.Enrollments)
                 csv.AppendLine($"\"{row.StudentName}\",\"{row.Email}\",\"{row.EnrolledAt:yyyy-MM-dd HH:mm}\"");
@@ -130,14 +130,14 @@ namespace EliteAcademy.Web.Controllers
         public async Task<IActionResult> RevenueReport(int? year)
         {
             var reportYear = year ?? DateTime.UtcNow.Year;
-            var result     = await _mediator.Send(new GetRevenueReportQuery(reportYear));
+            var result = await _mediator.Send(new GetRevenueReportQuery(reportYear));
             return View(result.Data ?? new RevenueReportDto { Year = reportYear });
         }
 
         public async Task<IActionResult> ExportRevenueReport(int? year)
         {
             var reportYear = year ?? DateTime.UtcNow.Year;
-            var result     = await _mediator.Send(new GetRevenueReportQuery(reportYear));
+            var result = await _mediator.Send(new GetRevenueReportQuery(reportYear));
             if (!result.Success || result.Data == null)
             {
                 TempData["Error"] = result.Message;
@@ -145,7 +145,7 @@ namespace EliteAcademy.Web.Controllers
             }
 
             var data = result.Data;
-            var csv  = new StringBuilder();
+            var csv = new StringBuilder();
 
             csv.AppendLine($"Revenue Report — {data.Year}");
             csv.AppendLine($"Total Revenue,{data.TotalRevenue:F2}");

@@ -13,5 +13,7 @@ namespace EliteAcademy.Application.DTOs.Class
         public decimal Price { get; set; }
         public ClassStatus Status { get; set; }
         public string? Feedback { get; set; }
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
     }
 }

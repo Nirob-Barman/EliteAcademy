@@ -18,9 +18,9 @@ public class CreateClassHandler : IRequestHandler<CreateClassCommand, Result<int
         IUserContextService userContextService,
         IFileStorage fileStorage)
     {
-        _context            = context;
+        _context = context;
         _userContextService = userContextService;
-        _fileStorage        = fileStorage;
+        _fileStorage = fileStorage;
     }
 
     public async Task<Result<int>> Handle(CreateClassCommand request, CancellationToken cancellationToken)
@@ -29,13 +29,13 @@ public class CreateClassHandler : IRequestHandler<CreateClassCommand, Result<int
 
         var entity = new ClassEntity
         {
-            ClassName      = dto.ClassName,
+            ClassName = dto.ClassName,
             AvailableSeats = dto.AvailableSeats,
-            Price          = dto.Price,
-            InstructorId   = _userContextService.UserId,
-            Status         = ClassStatus.Pending,
-            CreatedBy      = _userContextService.UserId,
-            CreatedAt      = DateTime.UtcNow
+            Price = dto.Price,
+            InstructorId = _userContextService.UserId,
+            Status = ClassStatus.Pending,
+            CreatedBy = _userContextService.UserId,
+            CreatedAt = DateTime.UtcNow
         };
 
         if (request.ImageStream != null && !string.IsNullOrWhiteSpace(request.ImageFileName))

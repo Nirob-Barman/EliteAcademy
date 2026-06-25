@@ -214,15 +214,15 @@ namespace EliteAcademy.Web.Controllers
             var dto = result.Data!;
             return View(new ProfileViewModel
             {
-                FirstName        = dto.FirstName ?? string.Empty,
-                LastName         = dto.LastName  ?? string.Empty,
-                Email            = dto.Email,
-                PhoneNumber      = dto.PhoneNumber,
-                Gender           = dto.Gender,
-                DateOfBirth      = dto.DateOfBirth,
-                Address          = dto.Address,
+                FirstName = dto.FirstName ?? string.Empty,
+                LastName = dto.LastName ?? string.Empty,
+                Email = dto.Email,
+                PhoneNumber = dto.PhoneNumber,
+                Gender = dto.Gender,
+                DateOfBirth = dto.DateOfBirth,
+                Address = dto.Address,
                 ExistingPhotoUrl = dto.ImageUrl,
-                Role             = dto.Role
+                Role = dto.Role
             });
         }
 
@@ -235,19 +235,19 @@ namespace EliteAcademy.Web.Controllers
 
             var dto = new Application.DTOs.Identity.EditProfileDto
             {
-                FirstName   = vm.FirstName,
-                LastName    = vm.LastName,
+                FirstName = vm.FirstName,
+                LastName = vm.LastName,
                 PhoneNumber = vm.PhoneNumber,
-                Gender      = vm.Gender,
+                Gender = vm.Gender,
                 DateOfBirth = vm.DateOfBirth,
-                Address     = vm.Address
+                Address = vm.Address
             };
 
-            Stream? stream   = null;
+            Stream? stream = null;
             string? fileName = null;
             if (vm.PhotoFile != null && vm.PhotoFile.Length > 0)
             {
-                stream   = vm.PhotoFile.OpenReadStream();
+                stream = vm.PhotoFile.OpenReadStream();
                 fileName = vm.PhotoFile.FileName;
             }
 
@@ -287,13 +287,13 @@ namespace EliteAcademy.Web.Controllers
             }
             return View(new NotificationPreferencesViewModel
             {
-                EmailOnEnrollment        = result.Data!.EmailOnEnrollment,
-                EmailOnAnnouncement      = result.Data.EmailOnAnnouncement,
-                EmailOnClassStatus       = result.Data.EmailOnClassStatus,
+                EmailOnEnrollment = result.Data!.EmailOnEnrollment,
+                EmailOnAnnouncement = result.Data.EmailOnAnnouncement,
+                EmailOnClassStatus = result.Data.EmailOnClassStatus,
                 EmailOnApplicationStatus = result.Data.EmailOnApplicationStatus,
-                EmailOnPasswordChange    = result.Data.EmailOnPasswordChange,
-                InAppOnEnrollment        = result.Data.InAppOnEnrollment,
-                InAppOnAnnouncement      = result.Data.InAppOnAnnouncement,
+                EmailOnPasswordChange = result.Data.EmailOnPasswordChange,
+                InAppOnEnrollment = result.Data.InAppOnEnrollment,
+                InAppOnAnnouncement = result.Data.InAppOnAnnouncement,
             });
         }
 
@@ -306,13 +306,13 @@ namespace EliteAcademy.Web.Controllers
 
             var result = await _mediator.Send(new UpdateNotificationPreferencesCommand(new NotificationPreferenceDto
             {
-                EmailOnEnrollment        = vm.EmailOnEnrollment,
-                EmailOnAnnouncement      = vm.EmailOnAnnouncement,
-                EmailOnClassStatus       = vm.EmailOnClassStatus,
+                EmailOnEnrollment = vm.EmailOnEnrollment,
+                EmailOnAnnouncement = vm.EmailOnAnnouncement,
+                EmailOnClassStatus = vm.EmailOnClassStatus,
                 EmailOnApplicationStatus = vm.EmailOnApplicationStatus,
-                EmailOnPasswordChange    = vm.EmailOnPasswordChange,
-                InAppOnEnrollment        = vm.InAppOnEnrollment,
-                InAppOnAnnouncement      = vm.InAppOnAnnouncement,
+                EmailOnPasswordChange = vm.EmailOnPasswordChange,
+                InAppOnEnrollment = vm.InAppOnEnrollment,
+                InAppOnAnnouncement = vm.InAppOnAnnouncement,
             }));
 
             if (!result.Success)

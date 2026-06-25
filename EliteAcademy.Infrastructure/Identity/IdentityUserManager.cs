@@ -19,15 +19,15 @@ namespace EliteAcademy.Infrastructure.Identity
         {
             var identityUser = new ApplicationIdentityUser
             {
-                Email           = user.Email,
-                UserName        = user.Email,
-                PhoneNumber     = user.PhoneNumber,
-                FirstName       = user.FirstName,
-                LastName        = user.LastName,
-                Address         = user.Address,
-                Gender          = user.Gender,
-                DateOfBirth     = user.DateOfBirth,
-                ImageUrl        = user.ImageUrl,
+                Email = user.Email,
+                UserName = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Address = user.Address,
+                Gender = user.Gender,
+                DateOfBirth = user.DateOfBirth,
+                ImageUrl = user.ImageUrl,
                 IsAgreedToTerms = user.IsAgreedToTerms
             };
 
@@ -43,13 +43,13 @@ namespace EliteAcademy.Infrastructure.Identity
             if (identityUser == null)
                 return (false, new List<string> { "User not found." });
 
-            identityUser.FirstName      = user.FirstName;
-            identityUser.LastName       = user.LastName;
-            identityUser.PhoneNumber    = user.PhoneNumber;
-            identityUser.Address        = user.Address;
-            identityUser.Gender         = user.Gender;
-            identityUser.DateOfBirth    = user.DateOfBirth;
-            identityUser.ImageUrl       = user.ImageUrl;
+            identityUser.FirstName = user.FirstName;
+            identityUser.LastName = user.LastName;
+            identityUser.PhoneNumber = user.PhoneNumber;
+            identityUser.Address = user.Address;
+            identityUser.Gender = user.Gender;
+            identityUser.DateOfBirth = user.DateOfBirth;
+            identityUser.ImageUrl = user.ImageUrl;
             identityUser.IsAgreedToTerms = user.IsAgreedToTerms;
 
             var result = await _userManager.UpdateAsync(identityUser);
@@ -162,7 +162,7 @@ namespace EliteAcademy.Infrastructure.Identity
                 return (false, new List<string> { "User not found." });
 
             identityUser.LockoutEnabled = true;
-            identityUser.LockoutEnd     = DateTimeOffset.MaxValue;
+            identityUser.LockoutEnd = DateTimeOffset.MaxValue;
             var result = await _userManager.UpdateAsync(identityUser);
             return (result.Succeeded, result.Errors.Select(e => e.Description).ToList());
         }
@@ -180,17 +180,17 @@ namespace EliteAcademy.Infrastructure.Identity
 
         private static AppUser MapToAppUser(ApplicationIdentityUser u) => new()
         {
-            Id              = u.Id,
-            Email           = u.Email!,
-            FirstName       = u.FirstName,
-            LastName        = u.LastName,
-            PhoneNumber     = u.PhoneNumber,
-            DateOfBirth     = u.DateOfBirth,
-            Gender          = u.Gender,
-            Address         = u.Address,
-            ImageUrl        = u.ImageUrl,
+            Id = u.Id,
+            Email = u.Email!,
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            PhoneNumber = u.PhoneNumber,
+            DateOfBirth = u.DateOfBirth,
+            Gender = u.Gender,
+            Address = u.Address,
+            ImageUrl = u.ImageUrl,
             IsAgreedToTerms = u.IsAgreedToTerms,
-            IsBanned        = u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow
+            IsBanned = u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow
         };
     }
 }

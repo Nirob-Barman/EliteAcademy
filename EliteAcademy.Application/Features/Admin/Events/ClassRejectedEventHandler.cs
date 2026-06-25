@@ -20,9 +20,9 @@ public class ClassRejectedEventHandler : INotificationHandler<ClassRejectedEvent
         IUserManager userManager)
     {
         _notifications = notifications;
-        _audit         = audit;
-        _email         = email;
-        _userManager   = userManager;
+        _audit = audit;
+        _email = email;
+        _userManager = userManager;
     }
 
     public async Task Handle(ClassRejectedEvent notification, CancellationToken cancellationToken)

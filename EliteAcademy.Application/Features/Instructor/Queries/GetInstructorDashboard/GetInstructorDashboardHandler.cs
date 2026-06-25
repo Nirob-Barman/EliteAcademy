@@ -16,7 +16,7 @@ public class GetInstructorDashboardHandler : IRequestHandler<GetInstructorDashbo
 
     public GetInstructorDashboardHandler(IApplicationDbContext context, IUserContextService userContextService)
     {
-        _context            = context;
+        _context = context;
         _userContextService = userContextService;
     }
 
@@ -56,28 +56,28 @@ public class GetInstructorDashboardHandler : IRequestHandler<GetInstructorDashbo
             var monthRevenue = monthEnrollments.Sum(e =>
             {
                 var cls = classes.FirstOrDefault(c => c.Id == e.ClassId);
-                var pe  = paidPreEnrollments.FirstOrDefault(p => p.ClassId == e.ClassId && p.StudentId == e.StudentId);
+                var pe = paidPreEnrollments.FirstOrDefault(p => p.ClassId == e.ClassId && p.StudentId == e.StudentId);
                 return (cls?.Price ?? 0) - (pe?.DiscountAmount ?? 0);
             });
 
             allMonths.Add(new MonthlyRevenueItem
             {
-                Year        = d.Year,
-                Month       = d.Month,
+                Year = d.Year,
+                Month = d.Month,
                 Enrollments = monthEnrollments.Count,
-                Revenue     = monthRevenue
+                Revenue = monthRevenue
             });
         }
 
         return Result<InstructorDashboardDto>.Ok(new InstructorDashboardDto
         {
-            TotalClasses    = classes.Count,
-            PendingClasses  = classes.Count(c => c.Status == ClassStatus.Pending),
+            TotalClasses = classes.Count,
+            PendingClasses = classes.Count(c => c.Status == ClassStatus.Pending),
             ApprovedClasses = classes.Count(c => c.Status == ClassStatus.Approved),
             RejectedClasses = classes.Count(c => c.Status == ClassStatus.Rejected),
-            TotalStudents   = enrollments.Select(e => e.StudentId).Distinct().Count(),
-            TotalRevenue    = totalRevenue,
-            MonthlyRevenue  = allMonths
+            TotalStudents = enrollments.Select(e => e.StudentId).Distinct().Count(),
+            TotalRevenue = totalRevenue,
+            MonthlyRevenue = allMonths
         });
     }
 }

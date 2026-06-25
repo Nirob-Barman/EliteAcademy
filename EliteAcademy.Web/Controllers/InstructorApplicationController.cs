@@ -39,8 +39,8 @@ namespace EliteAcademy.Web.Controllers
 
             var result = await _mediator.Send(new ApplyForInstructorCommand(new InstructorApplicationFormDto
             {
-                Bio        = vm.Bio,
-                Expertise  = vm.Expertise,
+                Bio = vm.Bio,
+                Expertise = vm.Expertise,
                 Motivation = vm.Motivation
             }));
 

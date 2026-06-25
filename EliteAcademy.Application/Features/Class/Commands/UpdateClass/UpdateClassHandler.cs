@@ -17,9 +17,9 @@ public class UpdateClassHandler : IRequestHandler<UpdateClassCommand, Result<boo
         IUserContextService userContextService,
         IFileStorage fileStorage)
     {
-        _context            = context;
+        _context = context;
         _userContextService = userContextService;
-        _fileStorage        = fileStorage;
+        _fileStorage = fileStorage;
     }
 
     public async Task<Result<bool>> Handle(UpdateClassCommand request, CancellationToken cancellationToken)
@@ -35,11 +35,11 @@ public class UpdateClassHandler : IRequestHandler<UpdateClassCommand, Result<boo
         if (entity.InstructorId != _userContextService.UserId)
             return Result<bool>.Fail("You do not own this class.");
 
-        entity.ClassName      = dto.ClassName;
+        entity.ClassName = dto.ClassName;
         entity.AvailableSeats = dto.AvailableSeats;
-        entity.Price          = dto.Price;
-        entity.UpdatedBy      = _userContextService.UserId;
-        entity.UpdatedAt      = DateTime.UtcNow;
+        entity.Price = dto.Price;
+        entity.UpdatedBy = _userContextService.UserId;
+        entity.UpdatedAt = DateTime.UtcNow;
 
         if (request.ImageStream != null && !string.IsNullOrWhiteSpace(request.ImageFileName))
         {

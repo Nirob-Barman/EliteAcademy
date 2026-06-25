@@ -10,7 +10,7 @@ public static class MockDbSet
     public static Mock<DbSet<T>> Create<T>(List<T> data) where T : class
     {
         var queryable = data.AsQueryable();
-        var mockSet   = new Mock<DbSet<T>>();
+        var mockSet = new Mock<DbSet<T>>();
 
         mockSet.As<IAsyncEnumerable<T>>()
                .Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
@@ -54,7 +54,7 @@ internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
 
     public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
     {
-        var resultType     = typeof(TResult).GetGenericArguments()[0];
+        var resultType = typeof(TResult).GetGenericArguments()[0];
         var executionResult = typeof(IQueryProvider)
             .GetMethod(nameof(IQueryProvider.Execute), 1, new[] { typeof(Expression) })!
             .MakeGenericMethod(resultType)
@@ -70,7 +70,7 @@ internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
 internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
 {
     public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
-    public TestAsyncEnumerable(Expression expression)     : base(expression)  { }
+    public TestAsyncEnumerable(Expression expression) : base(expression) { }
 
     public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken ct = default) =>
         new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
@@ -83,7 +83,7 @@ internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
     private readonly IEnumerator<T> _inner;
     public TestAsyncEnumerator(IEnumerator<T> inner) => _inner = inner;
 
-    public T           Current        => _inner.Current;
+    public T Current => _inner.Current;
     public ValueTask<bool> MoveNextAsync() => new(_inner.MoveNext());
-    public ValueTask   DisposeAsync()  { _inner.Dispose(); return new ValueTask(); }
+    public ValueTask DisposeAsync() { _inner.Dispose(); return new ValueTask(); }
 }

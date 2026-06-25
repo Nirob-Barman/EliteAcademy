@@ -1,7 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Class;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Enums;
 using MediatR;
@@ -16,26 +15,37 @@ public class GetApprovedClassesHandler : IRequestHandler<GetApprovedClassesQuery
 
     public GetApprovedClassesHandler(IApplicationDbContext context, IUserManager userManager)
     {
-        _context     = context;
+        _context = context;
         _userManager = userManager;
     }
 
     public async Task<Result<List<ClassDto>>> Handle(GetApprovedClassesQuery request, CancellationToken cancellationToken)
     {
-        var classes = await _context.Classes
+        var classDtos = await _context.Classes
             .AsNoTracking()
             .Where(c => c.Status == ClassStatus.Approved)
+            .Select(c => new ClassDto
+            {
+                Id = c.Id,
+                ClassName = c.ClassName,
+                ClassImage = c.ClassImage,
+                InstructorId = c.InstructorId,
+                AvailableSeats = c.AvailableSeats,
+                Price = c.Price,
+                Status = c.Status,
+                ReviewCount = _context.Reviews.Count(r => r.ClassId == c.Id),
+                AverageRating = (double?)_context.Reviews
+                    .Where(r => r.ClassId == c.Id)
+                    .Average(r => (double?)r.Rating) ?? 0
+            })
             .ToListAsync(cancellationToken);
 
-        var users = await _userManager.GetAllUsersAsync();
-        var instructorMap = users.ToDictionary(
-            u => u.Id ?? "",
-            u => $"{u.FirstName} {u.LastName}".Trim());
+        var instructors = await _userManager.GetUsersByRoleAsync("Instructor");
+        var instructorMap = instructors.ToDictionary(u => u.Id ?? "", u => $"{u.FirstName} {u.LastName}".Trim());
 
-        var dtos = classes
-            .Select(c => ClassMapper.ToDto(c, instructorMap.GetValueOrDefault(c.InstructorId ?? "")))
-            .ToList();
+        foreach (var dto in classDtos)
+            dto.InstructorName = instructorMap.GetValueOrDefault(dto.InstructorId ?? "");
 
-        return Result<List<ClassDto>>.Ok(dtos);
+        return Result<List<ClassDto>>.Ok(classDtos);
     }
 }

@@ -20,8 +20,8 @@ namespace EliteAcademy.Application.Services
             IConfigEncryptor encryptor,
             IAuditLogService auditLogService)
         {
-            _context         = context;
-            _encryptor       = encryptor;
+            _context = context;
+            _encryptor = encryptor;
             _auditLogService = auditLogService;
         }
 
@@ -34,12 +34,12 @@ namespace EliteAcademy.Application.Services
 
             var dtos = all.Select(g => new PaymentGatewayDto
             {
-                Id               = g.Id,
-                Slug             = g.Slug,
-                Name             = g.Name,
-                IsActive         = g.IsActive,
-                IsSandbox        = g.IsSandbox,
-                CreatedAt        = g.CreatedAt,
+                Id = g.Id,
+                Slug = g.Slug,
+                Name = g.Name,
+                IsActive = g.IsActive,
+                IsSandbox = g.IsSandbox,
+                CreatedAt = g.CreatedAt,
                 TransactionCount = txCounts.GetValueOrDefault(g.Id)
             }).ToList();
 
@@ -54,10 +54,10 @@ namespace EliteAcademy.Application.Services
 
             return Result<PaymentGatewayDto>.Ok(new PaymentGatewayDto
             {
-                Id        = entity.Id,
-                Slug      = entity.Slug,
-                Name      = entity.Name,
-                IsActive  = entity.IsActive,
+                Id = entity.Id,
+                Slug = entity.Slug,
+                Name = entity.Name,
+                IsActive = entity.IsActive,
                 IsSandbox = entity.IsSandbox,
                 CreatedAt = entity.CreatedAt
             });
@@ -96,10 +96,10 @@ namespace EliteAcademy.Application.Services
             var configJson = string.IsNullOrWhiteSpace(dto.Config) ? "{}" : dto.Config;
             var entity = new PaymentGateway
             {
-                Slug      = slugLower,
-                Name      = dto.Name.Trim(),
-                Config    = _encryptor.Encrypt(configJson),
-                IsActive  = dto.IsActive,
+                Slug = slugLower,
+                Name = dto.Name.Trim(),
+                Config = _encryptor.Encrypt(configJson),
+                IsActive = dto.IsActive,
                 IsSandbox = dto.IsSandbox,
                 CreatedAt = DateTime.UtcNow
             };
@@ -145,10 +145,10 @@ namespace EliteAcademy.Application.Services
                 mergedJson = string.IsNullOrWhiteSpace(dto.Config) ? "{}" : dto.Config;
             }
 
-            entity.Slug      = slugLower;
-            entity.Name      = dto.Name.Trim();
-            entity.Config    = _encryptor.Encrypt(mergedJson);
-            entity.IsActive  = dto.IsActive;
+            entity.Slug = slugLower;
+            entity.Name = dto.Name.Trim();
+            entity.Config = _encryptor.Encrypt(mergedJson);
+            entity.IsActive = dto.IsActive;
             entity.IsSandbox = dto.IsSandbox;
             entity.UpdatedAt = DateTime.UtcNow;
 
@@ -166,7 +166,7 @@ namespace EliteAcademy.Application.Services
             if (entity == null)
                 return Result<bool>.Fail("Gateway not found.");
 
-            entity.IsActive  = !entity.IsActive;
+            entity.IsActive = !entity.IsActive;
             entity.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

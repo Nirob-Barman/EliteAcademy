@@ -23,7 +23,7 @@ namespace EliteAcademy.Web.Controllers
             IMediator mediator)
         {
             _userContextService = userContextService;
-            _mediator           = mediator;
+            _mediator = mediator;
         }
 
         [HttpGet]
@@ -51,11 +51,11 @@ namespace EliteAcademy.Web.Controllers
             var vm = new CheckoutViewModel
             {
                 PreEnrollmentId = preEnrollment.Id,
-                ClassName       = preEnrollment.ClassName ?? string.Empty,
-                Price           = preEnrollment.Price,
-                DiscountAmount  = preEnrollment.DiscountAmount,
-                CouponCode      = preEnrollment.CouponCode,
-                Gateways        = activeGateways
+                ClassName = preEnrollment.ClassName ?? string.Empty,
+                Price = preEnrollment.Price,
+                DiscountAmount = preEnrollment.DiscountAmount,
+                CouponCode = preEnrollment.CouponCode,
+                Gateways = activeGateways
             };
 
             return View(vm);
@@ -75,7 +75,7 @@ namespace EliteAcademy.Web.Controllers
             }
 
             var baseUrl = _userContextService.GetBaseUrl();
-            var result  = await _mediator.Send(new InitiatePaymentCommand(
+            var result = await _mediator.Send(new InitiatePaymentCommand(
                 vm.PreEnrollmentId, vm.SelectedGatewaySlug!, baseUrl));
 
             if (!result.Success)

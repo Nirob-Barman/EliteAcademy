@@ -19,8 +19,8 @@ public class GetClassStudentsHandler : IRequestHandler<GetClassStudentsQuery, Re
         IUserManager userManager,
         IUserContextService userContextService)
     {
-        _context            = context;
-        _userManager        = userManager;
+        _context = context;
+        _userManager = userManager;
         _userContextService = userContextService;
     }
 
@@ -47,9 +47,9 @@ public class GetClassStudentsHandler : IRequestHandler<GetClassStudentsQuery, Re
             var user = userMap.GetValueOrDefault(e.StudentId ?? "");
             return new ClassStudentDto
             {
-                StudentId  = e.StudentId,
-                FullName   = user != null ? $"{user.FirstName} {user.LastName}".Trim() : "Unknown",
-                Email      = user?.Email,
+                StudentId = e.StudentId,
+                FullName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : "Unknown",
+                Email = user?.Email,
                 EnrolledAt = e.EnrolledAt
             };
         }).ToList();

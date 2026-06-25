@@ -17,7 +17,7 @@ namespace EliteAcademy.Infrastructure.Payments
             // Demo: redirect immediately to success
             return Task.FromResult(new PaymentInitiateResult
             {
-                Success     = true,
+                Success = true,
                 RedirectUrl = successUrl
             });
         }

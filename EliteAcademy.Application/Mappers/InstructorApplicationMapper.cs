@@ -7,17 +7,17 @@ namespace EliteAcademy.Application.Mappers
     {
         public static InstructorApplicationDto ToDto(InstructorApplication entity) => new()
         {
-            Id          = entity.Id,
+            Id = entity.Id,
             ApplicantId = entity.ApplicantId,
-            FullName    = entity.FullName,
-            Email       = entity.Email,
-            Bio         = entity.Bio,
-            Expertise   = entity.Expertise,
-            Motivation  = entity.Motivation,
-            Status      = entity.Status,
-            AdminNotes  = entity.AdminNotes,
-            ReviewedAt  = entity.ReviewedAt,
-            CreatedAt   = entity.CreatedAt
+            FullName = entity.FullName,
+            Email = entity.Email,
+            Bio = entity.Bio,
+            Expertise = entity.Expertise,
+            Motivation = entity.Motivation,
+            Status = entity.Status,
+            AdminNotes = entity.AdminNotes,
+            ReviewedAt = entity.ReviewedAt,
+            CreatedAt = entity.CreatedAt
         };
     }
 }

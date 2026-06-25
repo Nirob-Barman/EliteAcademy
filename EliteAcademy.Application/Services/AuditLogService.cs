@@ -17,7 +17,7 @@ namespace EliteAcademy.Application.Services
             IApplicationDbContext context,
             IUserContextService userContextService)
         {
-            _context            = context;
+            _context = context;
             _userContextService = userContextService;
         }
 
@@ -27,13 +27,13 @@ namespace EliteAcademy.Application.Services
             _context.AuditLogs.Add(new AuditLog
             {
                 EntityName = entityName,
-                Action     = action,
-                UserId     = _userContextService.UserId,
-                UserName   = _userContextService.Email,
-                Details    = details,
-                OldValues  = oldValues,
-                NewValues  = newValues,
-                CreatedAt  = DateTime.UtcNow
+                Action = action,
+                UserId = _userContextService.UserId,
+                UserName = _userContextService.Email,
+                Details = details,
+                OldValues = oldValues,
+                NewValues = newValues,
+                CreatedAt = DateTime.UtcNow
             });
             await _context.SaveChangesAsync();
         }
@@ -56,15 +56,15 @@ namespace EliteAcademy.Application.Services
                 .Take(pageSize)
                 .Select(a => new AuditLogDto
                 {
-                    Id         = a.Id,
+                    Id = a.Id,
                     EntityName = a.EntityName,
-                    Action     = a.Action,
-                    UserId     = a.UserId,
-                    UserName   = a.UserName,
-                    Details    = a.Details,
-                    OldValues  = a.OldValues,
-                    NewValues  = a.NewValues,
-                    CreatedAt  = a.CreatedAt
+                    Action = a.Action,
+                    UserId = a.UserId,
+                    UserName = a.UserName,
+                    Details = a.Details,
+                    OldValues = a.OldValues,
+                    NewValues = a.NewValues,
+                    CreatedAt = a.CreatedAt
                 }).ToList();
 
             return Result<List<AuditLogDto>>.Ok(dtos);

@@ -12,33 +12,33 @@ namespace EliteAcademy.Web.ViewModels.Mappers
             {
                 "stripe_checkout" or "stripe_payment_intents" => new Dictionary<string, string?>
                 {
-                    ["secret_key"]      = vm.Stripe_SecretKey,
+                    ["secret_key"] = vm.Stripe_SecretKey,
                     ["publishable_key"] = vm.Stripe_PublishableKey,
-                    ["webhook_secret"]  = vm.Stripe_WebhookSecret,
+                    ["webhook_secret"] = vm.Stripe_WebhookSecret,
                 },
                 "sslcommerz_hosted" or "sslcommerz_easy" => new Dictionary<string, string?>
                 {
-                    ["store_id"]   = vm.Ssl_StoreId,
+                    ["store_id"] = vm.Ssl_StoreId,
                     ["store_pass"] = vm.Ssl_StorePassword,
                 },
                 "bkash_checkout" or "bkash_tokenized" => new Dictionary<string, string?>
                 {
-                    ["app_key"]    = vm.Bkash_AppKey,
+                    ["app_key"] = vm.Bkash_AppKey,
                     ["app_secret"] = vm.Bkash_AppSecret,
-                    ["username"]   = vm.Bkash_Username,
-                    ["password"]   = vm.Bkash_Password,
+                    ["username"] = vm.Bkash_Username,
+                    ["password"] = vm.Bkash_Password,
                 },
                 "bkash_webhook" => new Dictionary<string, string?>
                 {
-                    ["app_key"]        = vm.Bkash_AppKey,
-                    ["app_secret"]     = vm.Bkash_AppSecret,
-                    ["username"]       = vm.Bkash_Username,
-                    ["password"]       = vm.Bkash_Password,
+                    ["app_key"] = vm.Bkash_AppKey,
+                    ["app_secret"] = vm.Bkash_AppSecret,
+                    ["username"] = vm.Bkash_Username,
+                    ["password"] = vm.Bkash_Password,
                     ["webhook_secret"] = vm.Bkash_WebhookSecret,
                 },
                 "surjopay_checkout" or "surjopay_seamless" => new Dictionary<string, string?>
                 {
-                    ["store_id"]   = vm.Surjo_StoreId,
+                    ["store_id"] = vm.Surjo_StoreId,
                     ["store_pass"] = vm.Surjo_StorePassword,
                 },
                 _ => new Dictionary<string, string?>()
@@ -78,7 +78,7 @@ namespace EliteAcademy.Web.ViewModels.Mappers
                 case "bkash_checkout":
                 case "bkash_tokenized":
                 case "bkash_webhook":
-                    vm.Bkash_AppKey  = Get("app_key");
+                    vm.Bkash_AppKey = Get("app_key");
                     vm.Bkash_Username = Get("username");
                     break;
 
@@ -91,10 +91,10 @@ namespace EliteAcademy.Web.ViewModels.Mappers
 
         public static PaymentGatewayFormDto ToDto(PaymentGatewayFormViewModel vm) => new()
         {
-            Slug      = vm.Slug,
-            Name      = vm.Name,
-            Config    = BuildConfig(vm),
-            IsActive  = vm.IsActive,
+            Slug = vm.Slug,
+            Name = vm.Name,
+            Config = BuildConfig(vm),
+            IsActive = vm.IsActive,
             IsSandbox = vm.IsSandbox,
         };
     }

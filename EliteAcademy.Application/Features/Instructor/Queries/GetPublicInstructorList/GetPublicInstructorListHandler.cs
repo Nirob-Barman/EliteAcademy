@@ -2,7 +2,6 @@ using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.DTOs.Instructor;
 using EliteAcademy.Application.Interfaces.Identity;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,7 @@ public class GetPublicInstructorListHandler : IRequestHandler<GetPublicInstructo
 
     public GetPublicInstructorListHandler(IApplicationDbContext context, IUserManager userManager)
     {
-        _context     = context;
+        _context = context;
         _userManager = userManager;
     }
 
@@ -25,41 +24,44 @@ public class GetPublicInstructorListHandler : IRequestHandler<GetPublicInstructo
         var instructors = (await _userManager.GetUsersByRoleAsync("Instructor")).ToList();
         var instructorIds = instructors.Select(u => u.Id ?? "").ToHashSet();
 
-        var allClasses = await _context.Classes
+        var classData = await _context.Classes
             .AsNoTracking()
-            .Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId ?? ""))
+            .Where(c => c.Status == ClassStatus.Approved && instructorIds.Contains(c.InstructorId!))
+            .Select(c => new { c.Id, c.InstructorId })
             .ToListAsync(cancellationToken);
 
-        var classIds = allClasses.Select(c => c.Id).ToHashSet();
-        var allEnrollments = classIds.Any()
-            ? await _context.Enrollments.AsNoTracking().Where(e => classIds.Contains(e.ClassId)).ToListAsync(cancellationToken)
-            : new List<Enrollment>();
-
-        var classCountMap = allClasses
+        var classCountMap = classData
             .GroupBy(c => c.InstructorId ?? "")
             .ToDictionary(g => g.Key, g => g.Count());
 
-        var studentCountMap = allClasses
-            .GroupBy(c => c.InstructorId ?? "")
-            .ToDictionary(
-                g => g.Key,
-                g =>
-                {
-                    var ids = g.Select(c => c.Id).ToHashSet();
-                    return allEnrollments
-                        .Where(e => ids.Contains(e.ClassId))
-                        .Select(e => e.StudentId)
-                        .Distinct()
-                        .Count();
-                });
+        Dictionary<string, int> studentCountMap;
+        if (classData.Count == 0)
+        {
+            studentCountMap = new Dictionary<string, int>();
+        }
+        else
+        {
+            var classIds = classData.Select(c => c.Id).ToList();
+            var classToInstructor = classData.ToDictionary(c => c.Id, c => c.InstructorId ?? "");
+
+            var enrollmentData = await _context.Enrollments
+                .AsNoTracking()
+                .Where(e => classIds.Contains(e.ClassId))
+                .Select(e => new { e.ClassId, e.StudentId })
+                .ToListAsync(cancellationToken);
+
+            studentCountMap = enrollmentData
+                .GroupBy(e => classToInstructor.GetValueOrDefault(e.ClassId, ""))
+                .ToDictionary(g => g.Key, g => g.Select(e => e.StudentId).Distinct().Count());
+        }
 
         var dtos = instructors.Select(u => new InstructorProfileDto
         {
-            FirstName    = u.FirstName,
-            LastName     = u.LastName,
-            Email        = u.Email,
-            ImageUrl     = u.ImageUrl,
-            ClassCount   = classCountMap.GetValueOrDefault(u.Id ?? ""),
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Email = u.Email,
+            ImageUrl = u.ImageUrl,
+            ClassCount = classCountMap.GetValueOrDefault(u.Id ?? ""),
             StudentCount = studentCountMap.GetValueOrDefault(u.Id ?? "")
         }).ToList();
 

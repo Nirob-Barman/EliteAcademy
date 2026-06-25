@@ -55,7 +55,7 @@ namespace EliteAcademy.Web.Controllers
 
             if (vm.ImageFile != null && vm.ImageFile.Length > 0)
             {
-                stream   = vm.ImageFile.OpenReadStream();
+                stream = vm.ImageFile.OpenReadStream();
                 fileName = vm.ImageFile.FileName;
             }
 
@@ -90,7 +90,7 @@ namespace EliteAcademy.Web.Controllers
 
             if (vm.ImageFile != null && vm.ImageFile.Length > 0)
             {
-                stream   = vm.ImageFile.OpenReadStream();
+                stream = vm.ImageFile.OpenReadStream();
                 fileName = vm.ImageFile.FileName;
             }
 
@@ -115,7 +115,7 @@ namespace EliteAcademy.Web.Controllers
 
             var studentsResult = await _mediator.Send(new GetClassStudentsQuery(id));
             ViewBag.ClassName = classResult.Data!.ClassName;
-            ViewBag.ClassId   = id;
+            ViewBag.ClassId = id;
             return View(studentsResult.Data ?? new List<ClassStudentDto>());
         }
 
@@ -143,7 +143,7 @@ namespace EliteAcademy.Web.Controllers
 
             var qaResult = await _mediator.Send(new GetClassQaQuery(id));
             ViewBag.ClassName = classResult.Data!.ClassName;
-            ViewBag.ClassId   = id;
+            ViewBag.ClassId = id;
             return View(qaResult.Data ?? new List<QaQuestionDto>());
         }
 
@@ -188,7 +188,7 @@ namespace EliteAcademy.Web.Controllers
 
             var result = await _mediator.Send(new GetClassAnnouncementsQuery(id));
             ViewBag.ClassName = classResult.Data!.ClassName;
-            ViewBag.ClassId   = id;
+            ViewBag.ClassId = id;
             return View(result.Data ?? new List<AnnouncementDto>());
         }
 
@@ -199,8 +199,8 @@ namespace EliteAcademy.Web.Controllers
             var result = await _mediator.Send(new CreateAnnouncementCommand(new AnnouncementFormDto
             {
                 ClassId = classId,
-                Title   = title,
-                Body    = body
+                Title = title,
+                Body = body
             }));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Announcements), new { id = classId });

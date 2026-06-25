@@ -20,9 +20,9 @@ public class ClassApprovedEventHandler : INotificationHandler<ClassApprovedEvent
         IUserManager userManager)
     {
         _notifications = notifications;
-        _audit         = audit;
-        _email         = email;
-        _userManager   = userManager;
+        _audit = audit;
+        _email = email;
+        _userManager = userManager;
     }
 
     public async Task Handle(ClassApprovedEvent notification, CancellationToken cancellationToken)

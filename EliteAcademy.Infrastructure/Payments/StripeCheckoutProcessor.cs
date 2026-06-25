@@ -42,7 +42,7 @@ namespace EliteAcademy.Infrastructure.Payments
                 },
                 Mode = "payment",
                 SuccessUrl = successUrl + "&session_id={CHECKOUT_SESSION_ID}",
-                CancelUrl  = cancelUrl
+                CancelUrl = cancelUrl
             };
 
             try
@@ -52,7 +52,7 @@ namespace EliteAcademy.Infrastructure.Payments
 
                 return new PaymentInitiateResult
                 {
-                    Success     = true,
+                    Success = true,
                     RedirectUrl = session.Url
                 };
             }
@@ -60,7 +60,7 @@ namespace EliteAcademy.Infrastructure.Payments
             {
                 return new PaymentInitiateResult
                 {
-                    Success      = false,
+                    Success = false,
                     ErrorMessage = ex.StripeError?.Message ?? ex.Message
                 };
             }

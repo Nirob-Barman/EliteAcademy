@@ -18,9 +18,9 @@ namespace EliteAcademy.Tests.Services;
 
 public class WishlistHandlerTests
 {
-    private readonly Mock<IApplicationDbContext> _ctx     = new();
-    private readonly Mock<IUserManager>          _userMgr = new();
-    private readonly Mock<IUserContextService>   _userCtx = new();
+    private readonly Mock<IApplicationDbContext> _ctx = new();
+    private readonly Mock<IUserManager> _userMgr = new();
+    private readonly Mock<IUserContextService> _userCtx = new();
 
     private const string StudentId = "student-1";
 

@@ -22,10 +22,10 @@ public class GetClassAnnouncementsHandler : IRequestHandler<GetClassAnnouncement
             .OrderByDescending(a => a.CreatedAt)
             .Select(a => new AnnouncementDto
             {
-                Id        = a.Id,
-                ClassId   = a.ClassId,
-                Title     = a.Title,
-                Body      = a.Body,
+                Id = a.Id,
+                ClassId = a.ClassId,
+                Title = a.Title,
+                Body = a.Body,
                 CreatedAt = a.CreatedAt
             })
             .ToListAsync(cancellationToken);

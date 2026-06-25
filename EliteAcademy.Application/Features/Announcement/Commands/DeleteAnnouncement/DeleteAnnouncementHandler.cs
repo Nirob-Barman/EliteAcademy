@@ -13,7 +13,7 @@ public class DeleteAnnouncementHandler : IRequestHandler<DeleteAnnouncementComma
 
     public DeleteAnnouncementHandler(IApplicationDbContext context, IUserContextService userContextService)
     {
-        _context            = context;
+        _context = context;
         _userContextService = userContextService;
     }
 

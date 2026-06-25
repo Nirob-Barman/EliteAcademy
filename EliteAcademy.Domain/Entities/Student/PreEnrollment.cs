@@ -22,11 +22,11 @@ namespace EliteAcademy.Domain.Entities.Student
 
             return DomainResult<PreEnrollment>.Ok(new PreEnrollment
             {
-                ClassId       = cls.Id,
-                StudentId     = studentId,
+                ClassId = cls.Id,
+                StudentId = studentId,
                 PaymentStatus = PaymentStatus.Pending,
-                CreatedAt     = DateTime.UtcNow,
-                CreatedBy     = studentId
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = studentId
             });
         }
     }

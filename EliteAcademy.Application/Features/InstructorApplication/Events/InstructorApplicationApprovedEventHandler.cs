@@ -15,7 +15,7 @@ public class InstructorApplicationApprovedEventHandler : INotificationHandler<In
         IEmailService email)
     {
         _notifications = notifications;
-        _email         = email;
+        _email = email;
     }
 
     public async Task Handle(InstructorApplicationApprovedEvent notification, CancellationToken cancellationToken)

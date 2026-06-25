@@ -42,12 +42,12 @@ public class GetClassQaHandler : IRequestHandler<GetClassQaQuery, Result<List<Qa
                 var student = userMap.GetValueOrDefault(q.StudentId ?? "");
                 return new QaQuestionDto
                 {
-                    Id           = q.Id,
-                    ClassId      = q.ClassId,
-                    StudentId    = q.StudentId,
-                    StudentName  = student != null ? $"{student.FirstName} {student.LastName}".Trim() : "Student",
+                    Id = q.Id,
+                    ClassId = q.ClassId,
+                    StudentId = q.StudentId,
+                    StudentName = student != null ? $"{student.FirstName} {student.LastName}".Trim() : "Student",
                     QuestionText = q.QuestionText,
-                    AskedAt      = q.CreatedAt,
+                    AskedAt = q.CreatedAt,
                     Answers      = answers
                         .Where(a => a.QuestionId == q.Id)
                         .OrderBy(a => a.CreatedAt)
@@ -56,11 +56,11 @@ public class GetClassQaHandler : IRequestHandler<GetClassQaQuery, Result<List<Qa
                             var instructor = userMap.GetValueOrDefault(a.InstructorId ?? "");
                             return new QaAnswerDto
                             {
-                                Id             = a.Id,
-                                InstructorId   = a.InstructorId,
+                                Id = a.Id,
+                                InstructorId = a.InstructorId,
                                 InstructorName = instructor != null ? $"{instructor.FirstName} {instructor.LastName}".Trim() : "Instructor",
-                                AnswerText     = a.AnswerText,
-                                AnsweredAt     = a.CreatedAt
+                                AnswerText = a.AnswerText,
+                                AnsweredAt = a.CreatedAt
                             };
                         }).ToList()
                 };

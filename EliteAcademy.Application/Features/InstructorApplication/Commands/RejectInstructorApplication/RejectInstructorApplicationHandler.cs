@@ -25,10 +25,10 @@ public class RejectInstructorApplicationHandler : IRequestHandler<RejectInstruct
         if (app.Status != InstructorApplicationStatus.Pending)
             return Result<bool>.Fail("Only pending applications can be rejected.");
 
-        app.Status     = InstructorApplicationStatus.Rejected;
+        app.Status = InstructorApplicationStatus.Rejected;
         app.AdminNotes = request.AdminNotes;
         app.ReviewedAt = DateTime.UtcNow;
-        app.UpdatedAt  = DateTime.UtcNow;
+        app.UpdatedAt = DateTime.UtcNow;
 
         app.AddDomainEvent(new InstructorApplicationRejectedEvent(app.ApplicantId!, app.FullName!, app.Email!, request.AdminNotes));
 

@@ -15,7 +15,7 @@ public class ApproveClassHandler : IRequestHandler<ApproveClassCommand, Result<b
 
     public ApproveClassHandler(IApplicationDbContext context, IUserContextService userContextService)
     {
-        _context            = context;
+        _context = context;
         _userContextService = userContextService;
     }
 
@@ -25,8 +25,8 @@ public class ApproveClassHandler : IRequestHandler<ApproveClassCommand, Result<b
         if (entity == null)
             return Result<bool>.Fail("Class not found.");
 
-        entity.Status    = ClassStatus.Approved;
-        entity.Feedback  = null;
+        entity.Status = ClassStatus.Approved;
+        entity.Feedback = null;
         entity.UpdatedAt = DateTime.UtcNow;
         entity.UpdatedBy = _userContextService.UserId;
 

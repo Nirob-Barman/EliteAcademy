@@ -15,7 +15,7 @@ public class RejectClassHandler : IRequestHandler<RejectClassCommand, Result<boo
 
     public RejectClassHandler(IApplicationDbContext context, IUserContextService userContextService)
     {
-        _context            = context;
+        _context = context;
         _userContextService = userContextService;
     }
 
@@ -28,8 +28,8 @@ public class RejectClassHandler : IRequestHandler<RejectClassCommand, Result<boo
         if (entity == null)
             return Result<bool>.Fail("Class not found.");
 
-        entity.Status    = ClassStatus.Rejected;
-        entity.Feedback  = request.Feedback;
+        entity.Status = ClassStatus.Rejected;
+        entity.Feedback = request.Feedback;
         entity.UpdatedAt = DateTime.UtcNow;
         entity.UpdatedBy = _userContextService.UserId;
 

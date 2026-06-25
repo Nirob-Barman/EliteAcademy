@@ -8,27 +8,27 @@ namespace EliteAcademy.Web.ViewModels.Mappers
     {
         public static ClassFormDto ToDto(ClassFormViewModel vm) => new()
         {
-            ClassName      = vm.ClassName,
+            ClassName = vm.ClassName,
             AvailableSeats = vm.AvailableSeats,
-            Price          = vm.Price
+            Price = vm.Price
         };
 
         public static ClassFormDto ToDto(ClassEditFormViewModel vm) => new()
         {
-            Id             = vm.Id,
-            ClassName      = vm.ClassName,
+            Id = vm.Id,
+            ClassName = vm.ClassName,
             AvailableSeats = vm.AvailableSeats,
-            Price          = vm.Price,
-            ExistingImage  = vm.ExistingImage
+            Price = vm.Price,
+            ExistingImage = vm.ExistingImage
         };
 
         public static ClassEditFormViewModel ToEditVm(ClassDto dto) => new()
         {
-            Id             = dto.Id,
-            ClassName      = dto.ClassName ?? "",
-            ExistingImage  = dto.ClassImage,
+            Id = dto.Id,
+            ClassName = dto.ClassName ?? "",
+            ExistingImage = dto.ClassImage,
             AvailableSeats = dto.AvailableSeats,
-            Price          = dto.Price
+            Price = dto.Price
         };
 
 

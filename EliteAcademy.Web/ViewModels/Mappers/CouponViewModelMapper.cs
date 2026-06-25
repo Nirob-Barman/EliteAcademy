@@ -7,21 +7,21 @@ namespace EliteAcademy.Web.ViewModels.Mappers
     {
         public static CouponFormDto ToDto(CouponFormViewModel vm) => new()
         {
-            Code            = vm.Code,
+            Code = vm.Code,
             DiscountPercent = vm.DiscountPercent,
-            MaxUsages       = vm.MaxUsages,
-            ExpiresAt       = vm.ExpiresAt,
-            IsActive        = vm.IsActive
+            MaxUsages = vm.MaxUsages,
+            ExpiresAt = vm.ExpiresAt,
+            IsActive = vm.IsActive
         };
 
         public static CouponFormViewModel ToVm(CouponDto dto) => new()
         {
-            Id              = dto.Id,
-            Code            = dto.Code,
+            Id = dto.Id,
+            Code = dto.Code,
             DiscountPercent = dto.DiscountPercent,
-            MaxUsages       = dto.MaxUsages,
-            ExpiresAt       = dto.ExpiresAt,
-            IsActive        = dto.IsActive
+            MaxUsages = dto.MaxUsages,
+            ExpiresAt = dto.ExpiresAt,
+            IsActive = dto.IsActive
         };
     }
 }

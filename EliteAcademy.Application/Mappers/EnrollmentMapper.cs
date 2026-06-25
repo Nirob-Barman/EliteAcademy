@@ -8,26 +8,26 @@ namespace EliteAcademy.Application.Mappers
     {
         public static PreEnrollmentDto ToPreEnrollmentDto(PreEnrollment entity, Class? cls, string? instructorName) => new()
         {
-            Id             = entity.Id,
-            ClassId        = entity.ClassId,
-            ClassName      = cls?.ClassName,
-            ClassImage     = cls?.ClassImage,
+            Id = entity.Id,
+            ClassId = entity.ClassId,
+            ClassName = cls?.ClassName,
+            ClassImage = cls?.ClassImage,
             InstructorName = instructorName,
-            Price          = cls?.Price ?? 0,
-            PaymentStatus  = entity.PaymentStatus,
-            CouponCode     = entity.CouponCode,
+            Price = cls?.Price ?? 0,
+            PaymentStatus = entity.PaymentStatus,
+            CouponCode = entity.CouponCode,
             DiscountAmount = entity.DiscountAmount
         };
 
         public static EnrollmentDto ToEnrollmentDto(Enrollment entity, Class? cls, string? instructorName) => new()
         {
-            Id             = entity.Id,
-            ClassId        = entity.ClassId,
-            ClassName      = cls?.ClassName,
-            ClassImage     = cls?.ClassImage,
+            Id = entity.Id,
+            ClassId = entity.ClassId,
+            ClassName = cls?.ClassName,
+            ClassImage = cls?.ClassImage,
             InstructorName = instructorName,
-            Price          = cls?.Price ?? 0,
-            EnrolledAt     = entity.EnrolledAt
+            Price = cls?.Price ?? 0,
+            EnrolledAt = entity.EnrolledAt
         };
     }
 }

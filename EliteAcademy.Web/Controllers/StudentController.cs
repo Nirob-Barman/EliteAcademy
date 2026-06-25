@@ -107,11 +107,11 @@ namespace EliteAcademy.Web.Controllers
         public async Task<IActionResult> EnrolledClasses()
         {
             var enrollmentsResult = await _mediator.Send(new GetEnrolledClassesQuery());
-            var reviewedResult    = await _mediator.Send(new GetReviewedClassIdsQuery());
+            var reviewedResult = await _mediator.Send(new GetReviewedClassIdsQuery());
 
             return View(new EnrolledClassesViewModel
             {
-                Enrollments      = enrollmentsResult.Data ?? new(),
+                Enrollments = enrollmentsResult.Data ?? new(),
                 ReviewedClassIds = reviewedResult.Data ?? new()
             });
         }
@@ -140,7 +140,7 @@ namespace EliteAcademy.Web.Controllers
 
             return View(new ReviewFormViewModel
             {
-                ClassId   = classId,
+                ClassId = classId,
                 ClassName = cls?.ClassName
             });
         }
@@ -154,7 +154,7 @@ namespace EliteAcademy.Web.Controllers
             var result = await _mediator.Send(new CreateReviewCommand(new ReviewFormDto
             {
                 ClassId = vm.ClassId,
-                Rating  = vm.Rating,
+                Rating = vm.Rating,
                 Comment = vm.Comment
             }));
 
@@ -219,7 +219,7 @@ namespace EliteAcademy.Web.Controllers
             var enrolledClasses = await _mediator.Send(new GetEnrolledClassesQuery());
             var cls = enrolledClasses.Data?.FirstOrDefault(e => e.ClassId == classId);
             ViewBag.ClassName = cls?.ClassName ?? "Class";
-            ViewBag.ClassId   = classId;
+            ViewBag.ClassId = classId;
 
             var qaResult = await _mediator.Send(new GetClassQaQuery(classId));
             return View(qaResult.Data ?? new List<QaQuestionDto>());
@@ -231,7 +231,7 @@ namespace EliteAcademy.Web.Controllers
         {
             var result = await _mediator.Send(new AskQuestionCommand(new QaAskDto
             {
-                ClassId      = classId,
+                ClassId = classId,
                 QuestionText = questionText
             }));
             TempData[result.Success ? "Success" : "Error"] = result.Message;
@@ -262,7 +262,7 @@ namespace EliteAcademy.Web.Controllers
             var enrolledClasses = await _mediator.Send(new GetEnrolledClassesQuery());
             var cls = enrolledClasses.Data?.FirstOrDefault(e => e.ClassId == classId);
             ViewBag.ClassName = cls?.ClassName ?? "Class";
-            ViewBag.ClassId   = classId;
+            ViewBag.ClassId = classId;
 
             var result = await _mediator.Send(new GetClassAnnouncementsQuery(classId));
             return View(result.Data ?? new List<AnnouncementDto>());

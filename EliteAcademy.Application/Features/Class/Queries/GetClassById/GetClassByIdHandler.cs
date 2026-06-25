@@ -15,7 +15,7 @@ public class GetClassByIdHandler : IRequestHandler<GetClassByIdQuery, Result<Cla
 
     public GetClassByIdHandler(IApplicationDbContext context, IUserManager userManager)
     {
-        _context     = context;
+        _context = context;
         _userManager = userManager;
     }
 
