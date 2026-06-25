@@ -1,7 +1,7 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Interfaces;
-using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
+using EliteAcademy.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using DomainAnnouncement = EliteAcademy.Domain.Entities.Instructor.Announcement;
@@ -12,16 +12,11 @@ public class CreateAnnouncementHandler : IRequestHandler<CreateAnnouncementComma
 {
     private readonly IApplicationDbContext _context;
     private readonly IUserContextService _userContextService;
-    private readonly INotificationService _notificationService;
 
-    public CreateAnnouncementHandler(
-        IApplicationDbContext context,
-        IUserContextService userContextService,
-        INotificationService notificationService)
+    public CreateAnnouncementHandler(IApplicationDbContext context, IUserContextService userContextService)
     {
-        _context             = context;
-        _userContextService  = userContextService;
-        _notificationService = notificationService;
+        _context            = context;
+        _userContextService = userContextService;
     }
 
     public async Task<Result<bool>> Handle(CreateAnnouncementCommand request, CancellationToken cancellationToken)
@@ -35,25 +30,11 @@ public class CreateAnnouncementHandler : IRequestHandler<CreateAnnouncementComma
         if (!domainResult.IsSuccess)
             return Result<bool>.Fail(domainResult.Error);
 
-        _context.Announcements.Add(domainResult.Value!);
+        var announcement = domainResult.Value!;
+        announcement.AddDomainEvent(new AnnouncementPostedEvent(cls!.Id, cls.ClassName!, announcement.Title));
+
+        _context.Announcements.Add(announcement);
         await _context.SaveChangesAsync(cancellationToken);
-
-        var enrollments = await _context.Enrollments.AsNoTracking()
-            .Where(e => e.ClassId == request.Dto.ClassId)
-            .ToListAsync(cancellationToken);
-
-        foreach (var enrollment in enrollments)
-        {
-            if (!string.IsNullOrWhiteSpace(enrollment.StudentId))
-            {
-                await _notificationService.CreateAsync(
-                    enrollment.StudentId,
-                    $"New announcement: {request.Dto.Title}",
-                    $"Your instructor posted an announcement in \"{cls?.ClassName}\".",
-                    $"/Student/ClassAnnouncements?classId={request.Dto.ClassId}");
-            }
-        }
-
         return Result<bool>.Ok(true, "Announcement posted.");
     }
 }

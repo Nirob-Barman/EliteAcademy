@@ -9,6 +9,7 @@ using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Domain.Enums;
 using EliteAcademy.Infrastructure.Persistence;
 using FluentAssertions;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -26,7 +27,8 @@ public class WishlistIntegrationTests : IDisposable
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _db = new ApplicationDbContext(options);
+        var mediator = new Mock<IMediator>();
+        _db = new ApplicationDbContext(options, mediator.Object);
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
         _userMgr.Setup(x => x.GetAllUsersAsync()).ReturnsAsync(new List<AppUser>());
     }

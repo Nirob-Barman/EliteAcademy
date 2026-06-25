@@ -4,6 +4,7 @@ using EliteAcademy.Domain.Entities.Account;
 using EliteAcademy.Domain.Entities.Instructor;
 using EliteAcademy.Domain.Entities.Student;
 using EliteAcademy.Infrastructure.Identity.Entity;
+using MediatR;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Announcement = EliteAcademy.Domain.Entities.Instructor.Announcement;
@@ -12,7 +13,12 @@ namespace EliteAcademy.Infrastructure.Persistence
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationIdentityUser>, IApplicationDbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        private readonly IMediator _mediator;
+
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IMediator mediator) : base(options)
+        {
+            _mediator = mediator;
+        }
 
         public DbSet<LoginAudit> LoginAudits { get; set; }
         public DbSet<Class> Classes { get; set; }
@@ -35,6 +41,23 @@ namespace EliteAcademy.Infrastructure.Persistence
         {
             base.OnModelCreating(builder);
             builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var result = await base.SaveChangesAsync(cancellationToken);
+
+            var events = ChangeTracker.Entries<BaseEntity>()
+                .SelectMany(e => e.Entity.DomainEvents)
+                .ToList();
+
+            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+                entry.Entity.ClearDomainEvents();
+
+            foreach (var domainEvent in events)
+                await _mediator.Publish(domainEvent, cancellationToken);
+
+            return result;
         }
 
         public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)

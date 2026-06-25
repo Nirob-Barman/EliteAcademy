@@ -1,6 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
-using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
+using EliteAcademy.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,13 +9,8 @@ namespace EliteAcademy.Application.Features.PaymentGateway.Commands.DeletePaymen
 public class DeletePaymentGatewayHandler : IRequestHandler<DeletePaymentGatewayCommand, Result<bool>>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IAuditLogService _auditLogService;
 
-    public DeletePaymentGatewayHandler(IApplicationDbContext context, IAuditLogService auditLogService)
-    {
-        _context = context;
-        _auditLogService = auditLogService;
-    }
+    public DeletePaymentGatewayHandler(IApplicationDbContext context) => _context = context;
 
     public async Task<Result<bool>> Handle(DeletePaymentGatewayCommand request, CancellationToken cancellationToken)
     {
@@ -29,12 +24,9 @@ public class DeletePaymentGatewayHandler : IRequestHandler<DeletePaymentGatewayC
         if (hasTx)
             return Result<bool>.Fail("Cannot delete a gateway that has transactions.");
 
+        entity.AddDomainEvent(new PaymentGatewayDeletedEvent(entity.Name, entity.Id));
         _context.PaymentGateways.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
-
-        await _auditLogService.LogAsync("PaymentGateway", "Delete",
-            details: $"Deleted gateway \"{entity.Name}\"");
-
         return Result<bool>.Ok(true, "Payment gateway deleted.");
     }
 }

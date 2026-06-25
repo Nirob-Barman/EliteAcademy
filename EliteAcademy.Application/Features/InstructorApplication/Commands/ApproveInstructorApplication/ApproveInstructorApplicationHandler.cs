@@ -1,9 +1,8 @@
 using EliteAcademy.Application.Common.Interfaces;
-using EliteAcademy.Application.Interfaces.Email;
 using EliteAcademy.Application.Interfaces.Identity;
-using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Enums;
+using EliteAcademy.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,19 +12,11 @@ public class ApproveInstructorApplicationHandler : IRequestHandler<ApproveInstru
 {
     private readonly IApplicationDbContext _context;
     private readonly IUserManager _userManager;
-    private readonly INotificationService _notificationService;
-    private readonly IEmailService _emailService;
 
-    public ApproveInstructorApplicationHandler(
-        IApplicationDbContext context,
-        IUserManager userManager,
-        INotificationService notificationService,
-        IEmailService emailService)
+    public ApproveInstructorApplicationHandler(IApplicationDbContext context, IUserManager userManager)
     {
-        _context = context;
+        _context     = context;
         _userManager = userManager;
-        _notificationService = notificationService;
-        _emailService = emailService;
     }
 
     public async Task<Result<bool>> Handle(ApproveInstructorApplicationCommand request, CancellationToken cancellationToken)
@@ -49,38 +40,13 @@ public class ApproveInstructorApplicationHandler : IRequestHandler<ApproveInstru
         if (!addResult.Succeeded)
             return Result<bool>.Fail(addResult.Errors.FirstOrDefault() ?? "Failed to assign Instructor role.");
 
-        app.Status = InstructorApplicationStatus.Approved;
+        app.Status     = InstructorApplicationStatus.Approved;
         app.ReviewedAt = DateTime.UtcNow;
-        app.UpdatedAt = DateTime.UtcNow;
+        app.UpdatedAt  = DateTime.UtcNow;
+
+        app.AddDomainEvent(new InstructorApplicationApprovedEvent(app.ApplicantId!, app.FullName!, app.Email!));
+
         await _context.SaveChangesAsync(cancellationToken);
-
-        await _notificationService.CreateAsync(
-            app.ApplicantId!,
-            "Instructor Application Approved",
-            "Congratulations! Your instructor application has been approved. You can now create classes.",
-            "/Instructor/Dashboard");
-
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(app.Email))
-            {
-                await _emailService.SendEmailAsync(
-                    subject: "Your Instructor Application — Approved!",
-                    message: $"""
-                        <div style="font-family:Arial,sans-serif;max-width:520px">
-                          <h2 style="color:#198754">Application Approved!</h2>
-                          <p>Hi <strong>{app.FullName}</strong>,</p>
-                          <p>Great news — your application to become an instructor on <strong>Elite Academy</strong> has been approved.</p>
-                          <p>You can now log in and start creating classes from your <strong>Instructor Dashboard</strong>.</p>
-                          <p>Note: you may need to log out and log back in for the role change to take effect.</p>
-                          <hr/><p style="color:#888;font-size:12px">Elite Academy</p>
-                        </div>
-                        """,
-                    toEmails: new List<string> { app.Email });
-            }
-        }
-        catch { /* don't fail approval if email throws */ }
-
         return Result<bool>.Ok(true, $"{app.FullName}'s application approved. They are now an Instructor.");
     }
 }
