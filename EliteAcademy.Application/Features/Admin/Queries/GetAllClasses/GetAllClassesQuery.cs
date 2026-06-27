@@ -4,4 +4,4 @@ using MediatR;
 
 namespace EliteAcademy.Application.Features.Admin.Queries.GetAllClasses;
 
-public record GetAllClassesQuery : IRequest<Result<List<ClassDto>>>;
+public record GetAllClassesQuery(int Page = 1, int PageSize = 15) : IRequest<Result<PagedResult<ClassDto>>>;

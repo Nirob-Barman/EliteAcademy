@@ -4,4 +4,4 @@ using MediatR;
 
 namespace EliteAcademy.Application.Features.Admin.Queries.GetAllStudents;
 
-public record GetAllStudentsQuery : IRequest<Result<List<AdminStudentDto>>>;
+public record GetAllStudentsQuery(int Page = 1, int PageSize = 15) : IRequest<Result<PagedResult<AdminStudentDto>>>;

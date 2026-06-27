@@ -1,6 +1,7 @@
 using EliteAcademy.Application.DTOs.Admin;
 using EliteAcademy.Application.Features.Admin.Commands.ChangeUserRole;
 using EliteAcademy.Application.Features.Admin.Queries.GetAllUsers;
+using EliteAcademy.Application.Wrappers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,10 +18,10 @@ namespace EliteAcademy.Web.Controllers
             _mediator = mediator;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
-            var result = await _mediator.Send(new GetAllUsersQuery());
-            return View(result.Data ?? new List<AdminUserDto>());
+            var result = await _mediator.Send(new GetAllUsersQuery(page));
+            return View(result.Data ?? new PagedResult<AdminUserDto>());
         }
 
         [HttpPost]

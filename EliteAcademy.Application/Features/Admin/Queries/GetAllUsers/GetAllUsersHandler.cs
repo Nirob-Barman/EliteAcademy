@@ -5,7 +5,7 @@ using MediatR;
 
 namespace EliteAcademy.Application.Features.Admin.Queries.GetAllUsers;
 
-public class GetAllUsersHandler : IRequestHandler<GetAllUsersQuery, Result<List<AdminUserDto>>>
+public class GetAllUsersHandler : IRequestHandler<GetAllUsersQuery, Result<PagedResult<AdminUserDto>>>
 {
     private readonly IUserManager _userManager;
 
@@ -14,12 +14,17 @@ public class GetAllUsersHandler : IRequestHandler<GetAllUsersQuery, Result<List<
         _userManager = userManager;
     }
 
-    public async Task<Result<List<AdminUserDto>>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<AdminUserDto>>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
     {
-        var users = await _userManager.GetAllUsersAsync();
-        var dtos = new List<AdminUserDto>();
+        var allUsers = (await _userManager.GetAllUsersAsync()).ToList();
+        var total = allUsers.Count;
+        var pageUsers = allUsers
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
 
-        foreach (var user in users)
+        var dtos = new List<AdminUserDto>();
+        foreach (var user in pageUsers)
         {
             var roles = await _userManager.GetRolesAsync(user);
             dtos.Add(new AdminUserDto
@@ -31,6 +36,12 @@ public class GetAllUsersHandler : IRequestHandler<GetAllUsersQuery, Result<List<
             });
         }
 
-        return Result<List<AdminUserDto>>.Ok(dtos);
+        return Result<PagedResult<AdminUserDto>>.Ok(new PagedResult<AdminUserDto>
+        {
+            Items = dtos,
+            TotalCount = total,
+            Page = request.Page,
+            PageSize = request.PageSize
+        });
     }
 }

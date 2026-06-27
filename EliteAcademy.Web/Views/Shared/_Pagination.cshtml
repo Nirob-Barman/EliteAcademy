@@ -1,0 +1,57 @@
+@model EliteAcademy.Web.ViewModels.Shared.PaginationViewModel
+
+@if (Model.TotalPages > 1)
+{
+    int start = Math.Max(1, Model.Page - 2);
+    int end = Math.Min(Model.TotalPages, Model.Page + 2);
+    if (end - start < 4)
+    {
+        if (start == 1) end = Math.Min(Model.TotalPages, 5);
+        else start = Math.Max(1, end - 4);
+    }
+
+    <nav class="mt-3" aria-label="Page navigation">
+        <ul class="pagination justify-content-center mb-0">
+            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="@Model.Action" asp-controller="@Model.Controller" asp-route-page="@(Model.Page - 1)">
+                    <i class="fa-solid fa-chevron-left fa-xs"></i>
+                </a>
+            </li>
+
+            @if (start > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" asp-action="@Model.Action" asp-controller="@Model.Controller" asp-route-page="1">1</a>
+                </li>
+                @if (start > 2)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+            }
+
+            @for (int p = start; p <= end; p++)
+            {
+                <li class="page-item @(p == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="@Model.Action" asp-controller="@Model.Controller" asp-route-page="@p">@p</a>
+                </li>
+            }
+
+            @if (end < Model.TotalPages)
+            {
+                @if (end < Model.TotalPages - 1)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+                <li class="page-item">
+                    <a class="page-link" asp-action="@Model.Action" asp-controller="@Model.Controller" asp-route-page="@Model.TotalPages">@Model.TotalPages</a>
+                </li>
+            }
+
+            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" asp-action="@Model.Action" asp-controller="@Model.Controller" asp-route-page="@(Model.Page + 1)">
+                    <i class="fa-solid fa-chevron-right fa-xs"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+}

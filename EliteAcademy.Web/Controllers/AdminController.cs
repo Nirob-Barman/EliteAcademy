@@ -1,18 +1,22 @@
 using System.Text;
 using EliteAcademy.Application.DTOs.Admin;
 using EliteAcademy.Application.DTOs.Class;
+using EliteAcademy.Application.DTOs.InstructorApplication;
 using EliteAcademy.Application.Features.Admin.Commands.ApproveClass;
 using EliteAcademy.Application.Features.Admin.Commands.BanStudent;
+using EliteAcademy.Application.Features.Admin.Commands.ChangeUserRole;
 using EliteAcademy.Application.Features.Admin.Commands.RejectClass;
 using EliteAcademy.Application.Features.Admin.Commands.UnbanStudent;
 using EliteAcademy.Application.Features.Admin.Queries.GetAdminDashboard;
 using EliteAcademy.Application.Features.Admin.Queries.GetAllClasses;
 using EliteAcademy.Application.Features.Admin.Queries.GetAllStudents;
+using EliteAcademy.Application.Features.Admin.Queries.GetAllUsers;
 using EliteAcademy.Application.Features.Admin.Queries.GetClassEnrollments;
 using EliteAcademy.Application.Features.Admin.Queries.GetRevenueReport;
 using EliteAcademy.Application.Features.InstructorApplication.Commands.ApproveInstructorApplication;
 using EliteAcademy.Application.Features.InstructorApplication.Commands.RejectInstructorApplication;
 using EliteAcademy.Application.Features.InstructorApplication.Queries.GetAllInstructorApplications;
+using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Web.ViewModels.Admin;
 using EliteAcademy.Web.ViewModels.InstructorApplication;
 using MediatR;
@@ -37,10 +41,12 @@ namespace EliteAcademy.Web.Controllers
             return View(result.Data ?? new AdminDashboardDto());
         }
 
-        public async Task<IActionResult> Classes()
+        // ── Class Management ────────────────────────────────────────────────────
+
+        public async Task<IActionResult> Classes(int page = 1)
         {
-            var result = await _mediator.Send(new GetAllClassesQuery());
-            return View(result.Data ?? new List<ClassDto>());
+            var result = await _mediator.Send(new GetAllClassesQuery(page));
+            return View(result.Data ?? new PagedResult<ClassDto>());
         }
 
         [HttpPost]
@@ -67,12 +73,29 @@ namespace EliteAcademy.Web.Controllers
             return RedirectToAction(nameof(Classes));
         }
 
+        // ── User Management ─────────────────────────────────────────────────────
+
+        public async Task<IActionResult> Users(int page = 1)
+        {
+            var result = await _mediator.Send(new GetAllUsersQuery(page));
+            return View(result.Data ?? new PagedResult<AdminUserDto>());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeRole(string userId, string newRole)
+        {
+            var result = await _mediator.Send(new ChangeUserRoleCommand(userId, newRole));
+            TempData[result.Success ? "Success" : "Error"] = result.Message;
+            return RedirectToAction(nameof(Users));
+        }
+
         // ── Student Management ──────────────────────────────────────────────────
 
-        public async Task<IActionResult> Students()
+        public async Task<IActionResult> Students(int page = 1)
         {
-            var result = await _mediator.Send(new GetAllStudentsQuery());
-            return View(result.Data ?? new List<AdminStudentDto>());
+            var result = await _mediator.Send(new GetAllStudentsQuery(page));
+            return View(result.Data ?? new PagedResult<AdminStudentDto>());
         }
 
         [HttpPost]
@@ -175,10 +198,10 @@ namespace EliteAcademy.Web.Controllers
 
         // ── Instructor Applications ─────────────────────────────────────────────
 
-        public async Task<IActionResult> InstructorApplications()
+        public async Task<IActionResult> InstructorApplications(int page = 1)
         {
-            var result = await _mediator.Send(new GetAllInstructorApplicationsQuery());
-            return View(result.Data ?? new List<Application.DTOs.InstructorApplication.InstructorApplicationDto>());
+            var result = await _mediator.Send(new GetAllInstructorApplicationsQuery(page));
+            return View(result.Data ?? new PagedResult<InstructorApplicationDto>());
         }
 
         [HttpPost]

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EliteAcademy.Application.Features.InstructorApplication.Queries.GetAllInstructorApplications;
 
-public class GetAllInstructorApplicationsHandler : IRequestHandler<GetAllInstructorApplicationsQuery, Result<List<InstructorApplicationDto>>>
+public class GetAllInstructorApplicationsHandler : IRequestHandler<GetAllInstructorApplicationsQuery, Result<PagedResult<InstructorApplicationDto>>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -16,13 +16,32 @@ public class GetAllInstructorApplicationsHandler : IRequestHandler<GetAllInstruc
         _context = context;
     }
 
-    public async Task<Result<List<InstructorApplicationDto>>> Handle(GetAllInstructorApplicationsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<InstructorApplicationDto>>> Handle(GetAllInstructorApplicationsQuery request, CancellationToken cancellationToken)
     {
-        var apps = (await _context.InstructorApplications.AsNoTracking().ToListAsync(cancellationToken))
-            .OrderByDescending(a => a.CreatedAt)
-            .Select(InstructorApplicationMapper.ToDto)
-            .ToList();
+        var total = await _context.InstructorApplications.CountAsync(cancellationToken);
 
-        return Result<List<InstructorApplicationDto>>.Ok(apps);
+        var statusCounts = await _context.InstructorApplications
+            .AsNoTracking()
+            .GroupBy(a => a.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var apps = await _context.InstructorApplications
+            .AsNoTracking()
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync(cancellationToken);
+
+        var dtos = apps.Select(InstructorApplicationMapper.ToDto).ToList();
+
+        return Result<PagedResult<InstructorApplicationDto>>.Ok(new PagedResult<InstructorApplicationDto>
+        {
+            Items = dtos,
+            TotalCount = total,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            StatusCounts = statusCounts.ToDictionary(s => s.Status.ToString(), s => s.Count)
+        });
     }
 }

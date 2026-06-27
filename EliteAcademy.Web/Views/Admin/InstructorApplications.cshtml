@@ -1,13 +1,13 @@
-@model List<EliteAcademy.Application.DTOs.InstructorApplication.InstructorApplicationDto>
+@model EliteAcademy.Application.Wrappers.PagedResult<EliteAcademy.Application.DTOs.InstructorApplication.InstructorApplicationDto>
 @using EliteAcademy.Domain.Enums
 
 @{
     ViewData["Title"] = "Instructor Applications";
     Layout = "~/Views/Shared/Admin/_Layout.cshtml";
 
-    var pending  = Model.Count(a => a.Status == InstructorApplicationStatus.Pending);
-    var approved = Model.Count(a => a.Status == InstructorApplicationStatus.Approved);
-    var rejected = Model.Count(a => a.Status == InstructorApplicationStatus.Rejected);
+    var pending = Model.StatusCounts?.GetValueOrDefault("Pending", 0) ?? 0;
+    var approved = Model.StatusCounts?.GetValueOrDefault("Approved", 0) ?? 0;
+    var rejected = Model.StatusCounts?.GetValueOrDefault("Rejected", 0) ?? 0;
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
@@ -19,7 +19,7 @@
     </div>
 </div>
 
-@if (!Model.Any())
+@if (!Model.Items.Any())
 {
     <div class="text-center py-5">
         <i class="fa-solid fa-file-circle-question fa-3x text-muted mb-3"></i>
@@ -44,13 +44,13 @@ else
                     </tr>
                 </thead>
                 <tbody>
-                    @{ int i = 1; }
-                    @foreach (var app in Model)
+                    @{ int i = (Model.Page - 1) * Model.PageSize + 1; }
+                    @foreach (var app in Model.Items)
                     {
-                        var rowClass   = app.Status == InstructorApplicationStatus.Approved ? "table-success"
-                                       : app.Status == InstructorApplicationStatus.Rejected ? "table-danger"
-                                       : "";
-                        var badgeClass = app.Status == InstructorApplicationStatus.Pending  ? "bg-warning text-dark"
+                        var rowClass = app.Status == InstructorApplicationStatus.Approved ? "table-success"
+                                     : app.Status == InstructorApplicationStatus.Rejected ? "table-danger"
+                                     : "";
+                        var badgeClass = app.Status == InstructorApplicationStatus.Pending ? "bg-warning text-dark"
                                        : app.Status == InstructorApplicationStatus.Approved ? "bg-success"
                                        : app.Status == InstructorApplicationStatus.Rejected ? "bg-danger"
                                        : "bg-secondary";
@@ -67,15 +67,11 @@ else
                                 @if (app.Status == InstructorApplicationStatus.Pending)
                                 {
                                     <div class="d-flex gap-1 justify-content-center flex-wrap">
-
-                                        @* Detail popover trigger *@
                                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#detailModal-@app.Id">
                                             View
                                         </button>
-
-                                        @* Approve *@
                                         <form asp-action="ApproveApplication" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@app.Id" />
@@ -84,8 +80,6 @@ else
                                                 Approve
                                             </button>
                                         </form>
-
-                                        @* Reject *@
                                         <button type="button" class="btn btn-sm btn-danger"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#rejectModal-@app.Id">
@@ -104,8 +98,6 @@ else
                             </td>
                         </tr>
 
-
-                        @* Detail modal *@
                         <div class="modal fade" id="detailModal-@app.Id" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
@@ -117,16 +109,12 @@ else
                                         <dl class="row">
                                             <dt class="col-sm-3">Email</dt>
                                             <dd class="col-sm-9">@app.Email</dd>
-
                                             <dt class="col-sm-3">Expertise</dt>
                                             <dd class="col-sm-9">@app.Expertise</dd>
-
                                             <dt class="col-sm-3">About</dt>
                                             <dd class="col-sm-9" style="white-space:pre-wrap">@app.Bio</dd>
-
                                             <dt class="col-sm-3">Motivation</dt>
                                             <dd class="col-sm-9" style="white-space:pre-wrap">@app.Motivation</dd>
-
                                             @if (!string.IsNullOrWhiteSpace(app.AdminNotes))
                                             {
                                                 <dt class="col-sm-3">Admin Notes</dt>
@@ -141,7 +129,6 @@ else
                             </div>
                         </div>
 
-                        @* Reject modal *@
                         @if (app.Status == InstructorApplicationStatus.Pending)
                         {
                             <div class="modal fade" id="rejectModal-@app.Id" tabindex="-1" aria-hidden="true">
@@ -176,6 +163,13 @@ else
             </table>
         </div>
     </div>
+
+    @await Html.PartialAsync("_Pagination", new EliteAcademy.Web.ViewModels.Shared.PaginationViewModel
+    {
+        Page = Model.Page,
+        TotalPages = Model.TotalPages,
+        Action = "InstructorApplications"
+    })
 }
 
 @section Scripts {
