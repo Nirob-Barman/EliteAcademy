@@ -3,6 +3,7 @@ using EliteAcademy.Application.Features.Instructor.Queries.GetPublicInstructorLi
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace EliteAcademy.Web.Controllers
 {
@@ -16,6 +17,7 @@ namespace EliteAcademy.Web.Controllers
             _mediator = mediator;
         }
 
+        [OutputCache(Duration = 300)]
         public async Task<IActionResult> Index()
         {
             var result = await _mediator.Send(new GetPublicInstructorListQuery());

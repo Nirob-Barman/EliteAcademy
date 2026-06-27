@@ -5,6 +5,7 @@ using EliteAcademy.Web.ViewModels.Student;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace EliteAcademy.Web.Controllers
 {
@@ -18,6 +19,7 @@ namespace EliteAcademy.Web.Controllers
             _mediator = mediator;
         }
 
+        [OutputCache(PolicyName = "AnonymousOnly", Duration = 300)]
         public async Task<IActionResult> Index()
         {
             var classResult = await _mediator.Send(new GetApprovedClassesQuery());

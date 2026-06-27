@@ -8,6 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplicationServices();
+builder.Services.AddOutputCache(options =>
+{
+    options.AddPolicy("AnonymousOnly", policy => policy
+        .With(ctx => !ctx.HttpContext.User.Identity!.IsAuthenticated));
+});
 
 var app = builder.Build();
 
@@ -33,6 +38,7 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseOutputCache();
 
 app.MapControllerRoute(
     name: "default",

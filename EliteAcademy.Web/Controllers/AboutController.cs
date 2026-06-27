@@ -2,6 +2,7 @@ using EliteAcademy.Application.Features.Admin.Queries.GetPlatformStats;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace EliteAcademy.Web.Controllers
 {
@@ -15,6 +16,7 @@ namespace EliteAcademy.Web.Controllers
             _mediator = mediator;
         }
 
+        [OutputCache(Duration = 1800)]
         public async Task<IActionResult> Index()
         {
             var result = await _mediator.Send(new GetPlatformStatsQuery());
