@@ -442,7 +442,8 @@ Admin accounts have access to a full management panel. Navigate to `/Admin/Dashb
 
 Review applications from students who want to become instructors.
 
-- Summary badges at the top: pending / approved / rejected counts.
+- Summary badges at the top show the total pending / approved / rejected counts across all pages.
+- Applications are listed 15 per page — use the page controls at the bottom to navigate.
 - Each row shows: applicant name, email, expertise, submission date, and status.
 - **View** — opens a modal with the full application (bio, expertise, motivation, admin notes).
 - **Approve** — shows a confirmation dialog; on confirm, changes the applicant's role to Instructor immediately and sends an email and in-app notification.
@@ -452,7 +453,7 @@ Review applications from students who want to become instructors.
 
 ### Class Management (`/Admin/Classes`)
 
-View all classes submitted by instructors.
+View all classes submitted by instructors. Classes are listed 15 per page — use the page controls at the bottom to navigate.
 
 | Column | Description |
 |---|---|
@@ -476,16 +477,16 @@ View all classes submitted by instructors.
 
 ### Student Management (`/Admin/Students`)
 
-- Lists all registered students with their enrollment count and account status.
+- Lists all registered students with their enrollment count and account status, 15 per page. Use the page controls at the bottom to navigate.
 - **Status badges:** Active (green) or Banned (red); banned rows are highlighted.
 - **Ban** — shows a confirmation dialog; on confirm, suspends the student's account immediately so they cannot log in.
 - **Unban** — shows a confirmation dialog; on confirm, restores access.
 
 > Banning uses ASP.NET Identity's lockout mechanism — the ban takes effect on the student's next login attempt.
 
-### User Management (`/Users`)
+### User Management (`/Admin/Users`)
 
-- Lists all platform users (Admin, Instructor, Student) with their current role.
+- Lists all platform users (Admin, Instructor, Student) with their current role, 15 per page. Use the page controls at the bottom to navigate.
 - **Change Role** — reassign a user between Instructor and Student. Admin accounts are protected and cannot be changed here.
 
 ### Revenue Report (`/Admin/RevenueReport`)

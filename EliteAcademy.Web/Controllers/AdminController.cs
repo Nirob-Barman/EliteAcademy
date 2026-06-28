@@ -22,6 +22,7 @@ using EliteAcademy.Web.ViewModels.InstructorApplication;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace EliteAcademy.Web.Controllers
 {
@@ -29,10 +30,12 @@ namespace EliteAcademy.Web.Controllers
     public class AdminController : Controller
     {
         private readonly IMediator _mediator;
+        private readonly IOutputCacheStore _cacheStore;
 
-        public AdminController(IMediator mediator)
+        public AdminController(IMediator mediator, IOutputCacheStore cacheStore)
         {
             _mediator = mediator;
+            _cacheStore = cacheStore;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -54,6 +57,8 @@ namespace EliteAcademy.Web.Controllers
         public async Task<IActionResult> ApproveClass(int id)
         {
             var result = await _mediator.Send(new ApproveClassCommand(id));
+            if (result.Success)
+                await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Classes));
         }
@@ -69,6 +74,8 @@ namespace EliteAcademy.Web.Controllers
             }
 
             var result = await _mediator.Send(new RejectClassCommand(vm.ClassId, vm.Feedback));
+            if (result.Success)
+                await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Classes));
         }
@@ -209,6 +216,8 @@ namespace EliteAcademy.Web.Controllers
         public async Task<IActionResult> ApproveApplication(int id)
         {
             var result = await _mediator.Send(new ApproveInstructorApplicationCommand(id));
+            if (result.Success)
+                await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(InstructorApplications));
         }

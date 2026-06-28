@@ -9,6 +9,7 @@ using EliteAcademy.Web.ViewModels.Mappers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace EliteAcademy.Web.Controllers
 {
@@ -16,10 +17,12 @@ namespace EliteAcademy.Web.Controllers
     public class CouponController : Controller
     {
         private readonly IMediator _mediator;
+        private readonly IOutputCacheStore _cacheStore;
 
-        public CouponController(IMediator mediator)
+        public CouponController(IMediator mediator, IOutputCacheStore cacheStore)
         {
             _mediator = mediator;
+            _cacheStore = cacheStore;
         }
 
         public async Task<IActionResult> Index()
@@ -48,6 +51,7 @@ namespace EliteAcademy.Web.Controllers
                 return View(vm);
             }
 
+            await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData["Success"] = result.Message;
             return RedirectToAction(nameof(Index));
         }
@@ -81,6 +85,7 @@ namespace EliteAcademy.Web.Controllers
                 return View(vm);
             }
 
+            await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData["Success"] = result.Message;
             return RedirectToAction(nameof(Index));
         }
@@ -90,6 +95,8 @@ namespace EliteAcademy.Web.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _mediator.Send(new DeleteCouponCommand(id));
+            if (result.Success)
+                await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
         }
@@ -99,6 +106,8 @@ namespace EliteAcademy.Web.Controllers
         public async Task<IActionResult> ToggleActive(int id)
         {
             var result = await _mediator.Send(new ToggleCouponCommand(id));
+            if (result.Success)
+                await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData[result.Success ? "Success" : "Error"] = result.Message;
             return RedirectToAction(nameof(Index));
         }

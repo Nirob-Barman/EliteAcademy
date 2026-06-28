@@ -9,6 +9,7 @@ using EliteAcademy.Web.ViewModels.Student;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace EliteAcademy.Web.Controllers
 {
@@ -17,13 +18,16 @@ namespace EliteAcademy.Web.Controllers
     {
         private readonly IUserContextService _userContextService;
         private readonly IMediator _mediator;
+        private readonly IOutputCacheStore _cacheStore;
 
         public PaymentController(
             IUserContextService userContextService,
-            IMediator mediator)
+            IMediator mediator,
+            IOutputCacheStore cacheStore)
         {
             _userContextService = userContextService;
             _mediator = mediator;
+            _cacheStore = cacheStore;
         }
 
         [HttpGet]
@@ -102,6 +106,7 @@ namespace EliteAcademy.Web.Controllers
                 return View("Cancel");
             }
 
+            await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData["Success"] = result.Message;
             return View("Success");
         }

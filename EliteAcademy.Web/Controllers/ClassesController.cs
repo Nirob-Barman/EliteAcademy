@@ -19,7 +19,7 @@ namespace EliteAcademy.Web.Controllers
             _mediator = mediator;
         }
 
-        [OutputCache(PolicyName = "AnonymousOnly", Duration = 300)]
+        [OutputCache(PolicyName = "AnonymousOnly", Duration = 300, Tags = new[] { "public" })]
         public async Task<IActionResult> Index()
         {
             var classResult = await _mediator.Send(new GetApprovedClassesQuery());

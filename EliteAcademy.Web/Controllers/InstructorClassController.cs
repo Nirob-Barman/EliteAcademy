@@ -18,6 +18,7 @@ using EliteAcademy.Web.ViewModels.Mappers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using System.Text;
 
 namespace EliteAcademy.Web.Controllers
@@ -26,10 +27,12 @@ namespace EliteAcademy.Web.Controllers
     public class InstructorClassController : Controller
     {
         private readonly IMediator _mediator;
+        private readonly IOutputCacheStore _cacheStore;
 
-        public InstructorClassController(IMediator mediator)
+        public InstructorClassController(IMediator mediator, IOutputCacheStore cacheStore)
         {
             _mediator = mediator;
+            _cacheStore = cacheStore;
         }
 
         // ── Class CRUD ────────────────────────────────────────────────────────
@@ -101,6 +104,7 @@ namespace EliteAcademy.Web.Controllers
                 return View(vm);
             }
 
+            await _cacheStore.EvictByTagAsync("public", HttpContext.RequestAborted);
             TempData["Success"] = result.Message;
             return RedirectToAction(nameof(Index));
         }

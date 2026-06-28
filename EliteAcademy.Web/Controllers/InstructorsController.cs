@@ -17,7 +17,7 @@ namespace EliteAcademy.Web.Controllers
             _mediator = mediator;
         }
 
-        [OutputCache(Duration = 300)]
+        [OutputCache(Duration = 300, Tags = new[] { "public" })]
         public async Task<IActionResult> Index()
         {
             var result = await _mediator.Send(new GetPublicInstructorListQuery());

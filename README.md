@@ -10,6 +10,8 @@ An ASP.NET Core 8 MVC online academy platform supporting three roles — **Admin
 - **Clean Architecture** — Domain → Application → Infrastructure → Web
 - **CQRS + MediatR** — all use cases as Commands/Queries with pipeline behaviors (logging, performance, exception, validation)
 - **FluentValidation** — command validators auto-discovered per feature
+- **Output Caching** — server-side full-response cache on public pages (Home, Classes for anonymous, Instructors, About)
+- **Server-side pagination** — DB-level `Skip`/`Take` on all admin list pages (page size 15)
 
 ## Prerequisites
 

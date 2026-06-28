@@ -16,7 +16,7 @@ namespace EliteAcademy.Web.Controllers
             _mediator = mediator;
         }
 
-        [OutputCache(Duration = 1800)]
+        [OutputCache(Duration = 1800, Tags = new[] { "public" })]
         public async Task<IActionResult> Index()
         {
             var result = await _mediator.Send(new GetPlatformStatsQuery());
