@@ -1,13 +1,16 @@
-@model List<EliteAcademy.Application.DTOs.Admin.AdminUserDto>
+@model EliteAcademy.Application.Wrappers.PagedResult<EliteAcademy.Application.DTOs.Admin.AdminUserDto>
 
 @{
     ViewData["Title"] = "User Management";
     Layout = "~/Views/Shared/Admin/_Layout.cshtml";
 }
 
-<h2 class="mb-4 fw-bold">User Management</h2>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold mb-0">User Management</h2>
+    <span class="badge bg-secondary fs-6">@Model.TotalCount users</span>
+</div>
 
-@if (Model != null && Model.Any())
+@if (Model.Items.Any())
 {
     <div class="card shadow-sm">
         <div class="table-responsive">
@@ -22,8 +25,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @{int i = 1;}
-                    @foreach (var user in Model)
+                    @{ int i = (Model.Page - 1) * Model.PageSize + 1; }
+                    @foreach (var user in Model.Items)
                     {
                         <tr>
                             <td>@(i++)</td>
@@ -68,6 +71,14 @@
             </table>
         </div>
     </div>
+
+    @await Html.PartialAsync("_Pagination", new EliteAcademy.Web.ViewModels.Shared.PaginationViewModel
+    {
+        Page = Model.Page,
+        TotalPages = Model.TotalPages,
+        Action = "Index",
+        Controller = "Users"
+    })
 }
 else
 {
