@@ -1,4 +1,4 @@
-namespace EliteAcademy.Application.Payment;
+namespace EliteAcademy.Application.Features.PaymentGateway;
 
 public class GatewayFieldDefinition
 {
