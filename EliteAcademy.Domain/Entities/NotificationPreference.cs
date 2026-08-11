@@ -15,5 +15,19 @@ namespace EliteAcademy.Domain.Entities
         // In-app notifications
         public bool InAppOnEnrollment   { get; set; } = true;
         public bool InAppOnAnnouncement { get; set; } = true;
+
+        public void UpdatePreferences(
+            bool emailOnEnrollment, bool emailOnAnnouncement, bool emailOnClassStatus,
+            bool emailOnApplicationStatus, bool emailOnPasswordChange,
+            bool inAppOnEnrollment, bool inAppOnAnnouncement)
+        {
+            EmailOnEnrollment = emailOnEnrollment;
+            EmailOnAnnouncement = emailOnAnnouncement;
+            EmailOnClassStatus = emailOnClassStatus;
+            EmailOnApplicationStatus = emailOnApplicationStatus;
+            EmailOnPasswordChange = emailOnPasswordChange;
+            InAppOnEnrollment = inAppOnEnrollment;
+            InAppOnAnnouncement = inAppOnAnnouncement;
+        }
     }
 }

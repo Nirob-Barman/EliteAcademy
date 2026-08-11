@@ -16,14 +16,5 @@ namespace EliteAcademy.Application.Mappers
             IsActive = entity.IsActive
         };
 
-        public static Coupon ToEntity(CouponFormDto dto) => new()
-        {
-            Code = dto.Code.Trim().ToUpper(),
-            DiscountPercent = dto.DiscountPercent,
-            MaxUsages = dto.MaxUsages,
-            ExpiresAt = dto.ExpiresAt,
-            IsActive = dto.IsActive,
-            CreatedAt = DateTime.UtcNow
-        };
     }
 }

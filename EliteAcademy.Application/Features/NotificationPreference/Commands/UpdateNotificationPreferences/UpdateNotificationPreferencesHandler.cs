@@ -32,25 +32,13 @@ public class UpdateNotificationPreferencesHandler
         if (pref == null)
         {
             pref = new NotificationPreferenceEntity { UserId = userId };
-            pref.EmailOnEnrollment = dto.EmailOnEnrollment;
-            pref.EmailOnAnnouncement = dto.EmailOnAnnouncement;
-            pref.EmailOnClassStatus = dto.EmailOnClassStatus;
-            pref.EmailOnApplicationStatus = dto.EmailOnApplicationStatus;
-            pref.EmailOnPasswordChange = dto.EmailOnPasswordChange;
-            pref.InAppOnEnrollment = dto.InAppOnEnrollment;
-            pref.InAppOnAnnouncement = dto.InAppOnAnnouncement;
             _context.NotificationPreferences.Add(pref);
         }
-        else
-        {
-            pref.EmailOnEnrollment = dto.EmailOnEnrollment;
-            pref.EmailOnAnnouncement = dto.EmailOnAnnouncement;
-            pref.EmailOnClassStatus = dto.EmailOnClassStatus;
-            pref.EmailOnApplicationStatus = dto.EmailOnApplicationStatus;
-            pref.EmailOnPasswordChange = dto.EmailOnPasswordChange;
-            pref.InAppOnEnrollment = dto.InAppOnEnrollment;
-            pref.InAppOnAnnouncement = dto.InAppOnAnnouncement;
-        }
+
+        pref.UpdatePreferences(
+            dto.EmailOnEnrollment, dto.EmailOnAnnouncement, dto.EmailOnClassStatus,
+            dto.EmailOnApplicationStatus, dto.EmailOnPasswordChange,
+            dto.InAppOnEnrollment, dto.InAppOnAnnouncement);
 
         await _context.SaveChangesAsync(cancellationToken);
         return Result<bool>.Ok(true, "Preferences saved.");

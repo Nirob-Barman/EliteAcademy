@@ -6,8 +6,12 @@ namespace EliteAcademy.Tests.Domain;
 
 public class AnnouncementCreateTests
 {
-    private static Class ApprovedClass(string instructorId = "instructor-1") =>
-        new() { Id = 1, InstructorId = instructorId, Status = ClassStatus.Approved };
+    private static Class ApprovedClass(string instructorId = "instructor-1")
+    {
+        var cls = new Class { Id = 1, InstructorId = instructorId };
+        cls.Approve();
+        return cls;
+    }
 
     [Fact]
     public void Create_NullClass_ReturnsFail()
@@ -30,7 +34,7 @@ public class AnnouncementCreateTests
     [Fact]
     public void Create_ClassNotApproved_ReturnsFail()
     {
-        var cls = new Class { Id = 1, InstructorId = "instructor-1", Status = ClassStatus.Pending };
+        var cls = new Class { Id = 1, InstructorId = "instructor-1" };
 
         var result = Announcement.Create("instructor-1", cls, "Title", "Body");
 

@@ -36,12 +36,10 @@ public class UpdateCouponHandler : IRequestHandler<UpdateCouponCommand, Result<b
             return Result<bool>.FailField("Code", "This coupon code is already used.");
 
         var oldCode = entity.Code;
-        entity.Code = code;
-        entity.DiscountPercent = dto.DiscountPercent;
-        entity.MaxUsages = dto.MaxUsages;
-        entity.ExpiresAt = dto.ExpiresAt;
-        entity.IsActive = dto.IsActive;
-        entity.UpdatedAt = DateTime.UtcNow;
+        var updateResult = entity.UpdateDetails(code, dto.DiscountPercent, dto.MaxUsages, dto.ExpiresAt, dto.IsActive);
+        if (!updateResult.IsSuccess)
+            return Result<bool>.Fail(updateResult.Error);
+
         entity.UpdatedBy = _userContextService.UserId;
 
         await _context.SaveChangesAsync(cancellationToken);

@@ -19,7 +19,7 @@ public class WishlistCreateTests
     [Fact]
     public void Create_ClassNotApproved_ReturnsFail()
     {
-        var cls = new Class { Id = 1, Status = ClassStatus.Pending };
+        var cls = new Class { Id = 1 };
 
         var result = Wishlist.Create("student-1", cls);
 
@@ -30,7 +30,8 @@ public class WishlistCreateTests
     [Fact]
     public void Create_ValidClass_ReturnsOk()
     {
-        var cls = new Class { Id = 1, Status = ClassStatus.Approved };
+        var cls = new Class { Id = 1 };
+        cls.Approve();
 
         var result = Wishlist.Create("student-1", cls);
 

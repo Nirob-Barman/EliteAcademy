@@ -55,19 +55,13 @@ public class ApplyForInstructorHandler : IRequestHandler<ApplyForInstructorComma
         }
 
         var dto = request.Dto;
-        var entity = new Domain.Entities.InstructorApplication
-        {
-            ApplicantId = userId,
-            FullName = $"{user.FirstName} {user.LastName}".Trim(),
-            Email = user.Email,
-            Bio = dto.Bio,
-            Expertise = dto.Expertise,
-            Motivation = dto.Motivation,
-            Status = InstructorApplicationStatus.Pending,
-            CreatedBy = userId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var domainResult = Domain.Entities.InstructorApplication.Create(
+            userId, $"{user.FirstName} {user.LastName}".Trim(), user.Email, dto.Bio, dto.Expertise, dto.Motivation);
 
+        if (!domainResult.IsSuccess)
+            return Result<InstructorApplicationDto>.Fail(domainResult.Error);
+
+        var entity = domainResult.Value!;
         _context.InstructorApplications.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 

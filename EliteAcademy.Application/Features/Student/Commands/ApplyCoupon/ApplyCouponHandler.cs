@@ -1,7 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,8 +26,6 @@ public class ApplyCouponHandler : IRequestHandler<ApplyCouponCommand, Result<boo
         var pe = await _context.PreEnrollments.FirstOrDefaultAsync(p => p.Id == request.PreEnrollmentId, cancellationToken);
         if (pe == null || pe.StudentId != studentId)
             return Result<bool>.Fail("Selection not found.");
-        if (pe.PaymentStatus != PaymentStatus.Pending)
-            return Result<bool>.Fail("Cannot apply coupon to a paid selection.");
 
         var cls = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == pe.ClassId, cancellationToken);
         if (cls == null)
@@ -39,17 +36,15 @@ public class ApplyCouponHandler : IRequestHandler<ApplyCouponCommand, Result<boo
 
         if (coupon == null)
             return Result<bool>.Fail("Invalid coupon code.");
-        if (!coupon.IsActive)
-            return Result<bool>.Fail("This coupon is not active.");
-        if (DateTime.UtcNow > coupon.ExpiresAt)
-            return Result<bool>.Fail("This coupon has expired.");
-        if (coupon.MaxUsages > 0 && coupon.UsageCount >= coupon.MaxUsages)
-            return Result<bool>.Fail("This coupon has reached its usage limit.");
 
-        pe.CouponCode = upper;
-        pe.DiscountAmount = Math.Round(cls.Price * coupon.DiscountPercent / 100, 2);
-        pe.UpdatedAt = DateTime.UtcNow;
-        pe.UpdatedBy = studentId;
+        var usableResult = coupon.EnsureUsable();
+        if (!usableResult.IsSuccess)
+            return Result<bool>.Fail(usableResult.Error);
+
+        var discountAmount = coupon.CalculateDiscount(cls.Price);
+        var applyResult = pe.ApplyCoupon(upper, discountAmount);
+        if (!applyResult.IsSuccess)
+            return Result<bool>.Fail(applyResult.Error);
 
         await _context.SaveChangesAsync(cancellationToken);
 

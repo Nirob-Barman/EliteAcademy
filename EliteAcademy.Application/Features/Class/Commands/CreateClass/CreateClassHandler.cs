@@ -1,7 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Enums;
 using MediatR;
 using ClassEntity = EliteAcademy.Domain.Entities.Instructor.Class;
 
@@ -33,7 +32,6 @@ public class CreateClassHandler : IRequestHandler<CreateClassCommand, Result<int
             AvailableSeats = dto.AvailableSeats,
             Price = dto.Price,
             InstructorId = _userContextService.UserId,
-            Status = ClassStatus.Pending,
             CreatedBy = _userContextService.UserId,
             CreatedAt = DateTime.UtcNow
         };

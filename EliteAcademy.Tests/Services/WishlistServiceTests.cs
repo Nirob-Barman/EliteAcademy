@@ -31,6 +31,13 @@ public class WishlistHandlerTests
         _ctx.Setup(prop).Returns(mock.Object);
     }
 
+    private static Class ApprovedClass(int id)
+    {
+        var cls = new Class { Id = id };
+        cls.Approve();
+        return cls;
+    }
+
     // ── AddToWishlistHandler ─────────────────────────────────────────────
 
     [Fact]
@@ -50,7 +57,7 @@ public class WishlistHandlerTests
     public async Task AddToWishlist_ClassNotApproved_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        SetupDbSet(x => x.Classes, new List<Class> { new() { Id = 1, Status = ClassStatus.Pending } });
+        SetupDbSet(x => x.Classes, new List<Class> { new() { Id = 1 } });
 
         var handler = new AddToWishlistHandler(_ctx.Object, _userCtx.Object);
         var result = await handler.Handle(new AddToWishlistCommand(1), default);
@@ -63,7 +70,7 @@ public class WishlistHandlerTests
     public async Task AddToWishlist_AlreadyWishlisted_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        SetupDbSet(x => x.Classes, new List<Class> { new() { Id = 1, Status = ClassStatus.Approved } });
+        SetupDbSet(x => x.Classes, new List<Class> { ApprovedClass(1) });
         SetupDbSet(x => x.Wishlists, new List<Wishlist> { new() { StudentId = StudentId, ClassId = 1 } });
 
         var handler = new AddToWishlistHandler(_ctx.Object, _userCtx.Object);
@@ -77,7 +84,7 @@ public class WishlistHandlerTests
     public async Task AddToWishlist_AlreadyEnrolled_ReturnsFail()
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
-        SetupDbSet(x => x.Classes, new List<Class> { new() { Id = 1, Status = ClassStatus.Approved } });
+        SetupDbSet(x => x.Classes, new List<Class> { ApprovedClass(1) });
         SetupDbSet(x => x.Wishlists, new List<Wishlist>());
         SetupDbSet(x => x.Enrollments, new List<Enrollment> { new() { StudentId = StudentId, ClassId = 1 } });
 
@@ -93,7 +100,7 @@ public class WishlistHandlerTests
     {
         _userCtx.Setup(x => x.UserId).Returns(StudentId);
         var mockWishlists = MockDbSet.Create(new List<Wishlist>());
-        SetupDbSet(x => x.Classes, new List<Class> { new() { Id = 1, Status = ClassStatus.Approved } });
+        SetupDbSet(x => x.Classes, new List<Class> { ApprovedClass(1) });
         _ctx.Setup(x => x.Wishlists).Returns(mockWishlists.Object);
         SetupDbSet(x => x.Enrollments, new List<Enrollment>());
         _ctx.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(1);

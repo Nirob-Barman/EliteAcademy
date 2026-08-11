@@ -1,8 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Enums;
-using EliteAcademy.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,13 +23,11 @@ public class ApproveClassHandler : IRequestHandler<ApproveClassCommand, Result<b
         if (entity == null)
             return Result<bool>.Fail("Class not found.");
 
-        entity.Status = ClassStatus.Approved;
-        entity.Feedback = null;
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.UpdatedBy = _userContextService.UserId;
+        var approveResult = entity.Approve();
+        if (!approveResult.IsSuccess)
+            return Result<bool>.Fail(approveResult.Error);
 
-        if (!string.IsNullOrWhiteSpace(entity.InstructorId))
-            entity.AddDomainEvent(new ClassApprovedEvent(entity.Id, entity.InstructorId, entity.ClassName!));
+        entity.UpdatedBy = _userContextService.UserId;
 
         await _context.SaveChangesAsync(cancellationToken);
         return Result<bool>.Ok(true, "Class approved.");

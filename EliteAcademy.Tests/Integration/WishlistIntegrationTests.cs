@@ -43,7 +43,15 @@ public class WishlistIntegrationTests : IDisposable
     }
 
     private void SeedClass(int id, ClassStatus status = ClassStatus.Approved, int seats = 10) =>
-        Seed(db => db.Classes.Add(new Class { Id = id, ClassName = $"Class {id}", Status = status, AvailableSeats = seats }));
+        Seed(db =>
+        {
+            var cls = new Class { Id = id, ClassName = $"Class {id}", AvailableSeats = seats };
+            if (status == ClassStatus.Approved)
+                cls.Approve();
+            else if (status == ClassStatus.Rejected)
+                cls.Reject("Rejected for test setup");
+            db.Classes.Add(cls);
+        });
 
     // ── AddToWishlistHandler ──────────────────────────────────────────────
 

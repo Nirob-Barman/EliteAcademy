@@ -64,8 +64,7 @@ public class HandlePaymentSuccessHandler : IRequestHandler<HandlePaymentSuccessC
         var verified = await processor.VerifyAsync(config, request.CallbackParams);
         if (!verified)
         {
-            tx.Status = PaymentTransactionStatus.Failed;
-            tx.UpdatedAt = DateTime.UtcNow;
+            tx.MarkFailed();
             await _context.SaveChangesAsync(cancellationToken);
             return Result<bool>.Fail("Payment verification failed.");
         }
@@ -73,8 +72,12 @@ public class HandlePaymentSuccessHandler : IRequestHandler<HandlePaymentSuccessC
         await _context.BeginTransactionAsync(cancellationToken);
         try
         {
-            tx.Status = PaymentTransactionStatus.Success;
-            tx.UpdatedAt = DateTime.UtcNow;
+            var markSuccessResult = tx.MarkSuccess();
+            if (!markSuccessResult.IsSuccess)
+            {
+                await _context.RollbackTransactionAsync(cancellationToken);
+                return Result<bool>.Fail(markSuccessResult.Error);
+            }
 
             var preEnrollment = await _context.PreEnrollments
                 .FirstOrDefaultAsync(p => p.Id == tx.PreEnrollmentId, cancellationToken);
@@ -90,31 +93,23 @@ public class HandlePaymentSuccessHandler : IRequestHandler<HandlePaymentSuccessC
             if (cls == null)
                 return Result<bool>.Fail("Class not found.");
 
-            preEnrollment.PaymentStatus = PaymentStatus.Paid;
-            preEnrollment.UpdatedAt = DateTime.UtcNow;
-            preEnrollment.UpdatedBy = preEnrollment.StudentId;
-
-            _context.Enrollments.Add(new Enrollment
+            var markPaidResult = preEnrollment.MarkPaid();
+            if (!markPaidResult.IsSuccess)
             {
-                ClassId = preEnrollment.ClassId,
-                StudentId = preEnrollment.StudentId,
-                EnrolledAt = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = preEnrollment.StudentId
-            });
+                await _context.RollbackTransactionAsync(cancellationToken);
+                return Result<bool>.Fail(markPaidResult.Error);
+            }
 
-            cls.AvailableSeats--;
-            cls.UpdatedAt = DateTime.UtcNow;
+            _context.Enrollments.Add(Enrollment.Create(preEnrollment.StudentId!, preEnrollment.ClassId));
+
+            // best-effort: floors at zero rather than failing — payment is already captured at this point
+            cls.DecrementSeat();
 
             if (!string.IsNullOrWhiteSpace(preEnrollment.CouponCode))
             {
                 var coupon = await _context.Coupons
                     .FirstOrDefaultAsync(c => c.Code == preEnrollment.CouponCode, cancellationToken);
-                if (coupon != null)
-                {
-                    coupon.UsageCount++;
-                    coupon.UpdatedAt = DateTime.UtcNow;
-                }
+                coupon?.RecordUsage();
             }
 
             await _context.SaveChangesAsync(cancellationToken);

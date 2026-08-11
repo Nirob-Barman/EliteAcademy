@@ -69,7 +69,6 @@ public class InitiatePaymentHandler : IRequestHandler<InitiatePaymentCommand, Re
                 PreEnrollmentId = request.PreEnrollmentId,
                 GatewayId = gateway.Id,
                 Amount = amount,
-                Status = PaymentTransactionStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = studentId
             };
@@ -87,8 +86,7 @@ public class InitiatePaymentHandler : IRequestHandler<InitiatePaymentCommand, Re
             var initiateResult = await processor.InitiateAsync(config, amount, tx.Id, successUrl, cancelUrl);
             if (!initiateResult.Success)
             {
-                tx.Status = PaymentTransactionStatus.Failed;
-                tx.UpdatedAt = DateTime.UtcNow;
+                tx.MarkFailed();
                 await _context.SaveChangesAsync(cancellationToken);
                 await _context.CommitTransactionAsync(cancellationToken);
                 return Result<string>.Fail(initiateResult.ErrorMessage ?? "Payment initiation failed.");

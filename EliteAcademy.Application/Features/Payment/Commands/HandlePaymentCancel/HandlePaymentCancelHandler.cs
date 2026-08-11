@@ -23,8 +23,7 @@ public class HandlePaymentCancelHandler : IRequestHandler<HandlePaymentCancelCom
 
         if (tx.Status == PaymentTransactionStatus.Pending)
         {
-            tx.Status = PaymentTransactionStatus.Cancelled;
-            tx.UpdatedAt = DateTime.UtcNow;
+            tx.Cancel();
             await _context.SaveChangesAsync(cancellationToken);
         }
 

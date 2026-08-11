@@ -1,3 +1,5 @@
+using EliteAcademy.Domain.Events;
+
 namespace EliteAcademy.Domain.Entities
 {
     public class PaymentGateway : BaseEntity
@@ -9,5 +11,7 @@ namespace EliteAcademy.Domain.Entities
         public bool IsSandbox { get; set; } = true;
 
         public ICollection<PaymentTransaction> Transactions { get; set; } = new List<PaymentTransaction>();
+
+        public void MarkDeleted() => AddDomainEvent(new PaymentGatewayDeletedEvent(Name, Id));
     }
 }

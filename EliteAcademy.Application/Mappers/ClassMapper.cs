@@ -21,18 +21,5 @@ namespace EliteAcademy.Application.Mappers
             };
         }
 
-        public static Class ToEntity(ClassDto dto)
-        {
-            return new Class
-            {
-                ClassName = dto.ClassName,
-                ClassImage = dto.ClassImage,
-                InstructorId = dto.InstructorId,
-                AvailableSeats = dto.AvailableSeats,
-                Price = dto.Price,
-                Status = dto.Status,
-                Feedback = dto.Feedback
-            };
-        }
     }
 }

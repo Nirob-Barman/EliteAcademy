@@ -1,5 +1,6 @@
 using EliteAcademy.Domain.Common;
 using EliteAcademy.Domain.Enums;
+using EliteAcademy.Domain.Events;
 
 namespace EliteAcademy.Domain.Entities.Instructor
 {
@@ -19,14 +20,18 @@ namespace EliteAcademy.Domain.Entities.Instructor
             if (string.IsNullOrWhiteSpace(title))
                 return DomainResult<Announcement>.Fail("Title is required.");
 
-            return DomainResult<Announcement>.Ok(new Announcement
+            var announcement = new Announcement
             {
                 ClassId = cls.Id,
                 Title = title.Trim(),
                 Body = body.Trim(),
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = instructorId
-            });
+            };
+
+            announcement.AddDomainEvent(new AnnouncementPostedEvent(cls.Id, cls.ClassName!, announcement.Title));
+
+            return DomainResult<Announcement>.Ok(announcement);
         }
     }
 }

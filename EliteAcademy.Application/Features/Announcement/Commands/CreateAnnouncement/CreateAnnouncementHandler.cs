@@ -1,7 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using DomainAnnouncement = EliteAcademy.Domain.Entities.Instructor.Announcement;
@@ -31,8 +30,6 @@ public class CreateAnnouncementHandler : IRequestHandler<CreateAnnouncementComma
             return Result<bool>.Fail(domainResult.Error);
 
         var announcement = domainResult.Value!;
-        announcement.AddDomainEvent(new AnnouncementPostedEvent(cls!.Id, cls.ClassName!, announcement.Title));
-
         _context.Announcements.Add(announcement);
         await _context.SaveChangesAsync(cancellationToken);
         return Result<bool>.Ok(true, "Announcement posted.");

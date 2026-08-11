@@ -1,7 +1,6 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,13 +23,10 @@ public class RemoveCouponHandler : IRequestHandler<RemoveCouponCommand, Result<b
         var pe = await _context.PreEnrollments.FirstOrDefaultAsync(p => p.Id == request.PreEnrollmentId, cancellationToken);
         if (pe == null || pe.StudentId != studentId)
             return Result<bool>.Fail("Selection not found.");
-        if (pe.PaymentStatus != PaymentStatus.Pending)
-            return Result<bool>.Fail("Cannot modify a paid selection.");
 
-        pe.CouponCode = null;
-        pe.DiscountAmount = 0;
-        pe.UpdatedAt = DateTime.UtcNow;
-        pe.UpdatedBy = studentId;
+        var removeResult = pe.RemoveCoupon();
+        if (!removeResult.IsSuccess)
+            return Result<bool>.Fail(removeResult.Error);
 
         await _context.SaveChangesAsync(cancellationToken);
 

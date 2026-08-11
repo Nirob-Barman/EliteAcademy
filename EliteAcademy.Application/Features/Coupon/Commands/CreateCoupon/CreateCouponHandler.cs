@@ -1,10 +1,10 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Interfaces.Services;
-using EliteAcademy.Application.Mappers;
 using EliteAcademy.Application.Wrappers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using CouponEntity = EliteAcademy.Domain.Entities.Coupon;
 
 namespace EliteAcademy.Application.Features.Coupon.Commands.CreateCoupon;
 
@@ -32,7 +32,11 @@ public class CreateCouponHandler : IRequestHandler<CreateCouponCommand, Result<b
         if (await _context.Coupons.AnyAsync(c => c.Code == code, cancellationToken))
             return Result<bool>.FailField("Code", "This coupon code already exists.");
 
-        var entity = CouponMapper.ToEntity(dto);
+        var domainResult = CouponEntity.Create(code, dto.DiscountPercent, dto.MaxUsages, dto.ExpiresAt, dto.IsActive);
+        if (!domainResult.IsSuccess)
+            return Result<bool>.Fail(domainResult.Error);
+
+        var entity = domainResult.Value!;
         entity.CreatedBy = _userContextService.UserId;
         _context.Coupons.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);

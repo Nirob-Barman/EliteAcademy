@@ -1,6 +1,5 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +14,6 @@ public class DeletePaymentGatewayHandler : IRequestHandler<DeletePaymentGatewayC
     public async Task<Result<bool>> Handle(DeletePaymentGatewayCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.PaymentGateways
-            .AsNoTracking()
             .FirstOrDefaultAsync(g => g.Id == request.Id, cancellationToken);
         if (entity == null)
             return Result<bool>.Fail("Gateway not found.");
@@ -24,7 +22,7 @@ public class DeletePaymentGatewayHandler : IRequestHandler<DeletePaymentGatewayC
         if (hasTx)
             return Result<bool>.Fail("Cannot delete a gateway that has transactions.");
 
-        entity.AddDomainEvent(new PaymentGatewayDeletedEvent(entity.Name, entity.Id));
+        entity.MarkDeleted();
         _context.PaymentGateways.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
         return Result<bool>.Ok(true, "Payment gateway deleted.");

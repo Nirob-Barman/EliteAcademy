@@ -88,16 +88,23 @@ namespace EliteAcademy.Infrastructure.Persistence
                 if (instructor == null)
                     continue;
 
-                db.Add(new Class
+                var entity = new Class
                 {
                     ClassName = c.Name,
                     AvailableSeats = c.Seats,
                     Price = c.Price,
                     InstructorId = instructor.Id,
-                    Status = c.Status,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = instructor.Id
-                });
+                };
+
+                if (c.Status == ClassStatus.Approved)
+                {
+                    entity.Approve();
+                    entity.ClearDomainEvents(); // seed data — don't dispatch approval notifications/emails
+                }
+
+                db.Add(entity);
             }
 
             await db.SaveChangesAsync();

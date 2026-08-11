@@ -1,6 +1,5 @@
 using EliteAcademy.Application.Common.Interfaces;
 using EliteAcademy.Application.Wrappers;
-using EliteAcademy.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,12 +14,11 @@ public class DeleteCouponHandler : IRequestHandler<DeleteCouponCommand, Result<b
     public async Task<Result<bool>> Handle(DeleteCouponCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Coupons
-            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
         if (entity == null)
             return Result<bool>.Fail("Coupon not found.");
 
-        entity.AddDomainEvent(new CouponDeletedEvent(entity.Code, entity.Id));
+        entity.MarkDeleted();
         _context.Coupons.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
         return Result<bool>.Ok(true, "Coupon deleted.");

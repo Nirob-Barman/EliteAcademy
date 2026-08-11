@@ -4,7 +4,6 @@ using EliteAcademy.Application.Interfaces.Identity;
 using EliteAcademy.Application.Interfaces.Services;
 using EliteAcademy.Application.Wrappers;
 using EliteAcademy.Domain.Entities.Student;
-using EliteAcademy.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,40 +36,27 @@ public class PayForClassHandler : IRequestHandler<PayForClassCommand, Result<boo
             return Result<bool>.Fail("Selection not found.");
         if (preEnrollment.StudentId != studentId)
             return Result<bool>.Fail("Not authorized.");
-        if (preEnrollment.PaymentStatus != PaymentStatus.Pending)
-            return Result<bool>.Fail("Already paid.");
 
         var cls = await _context.Classes.FirstOrDefaultAsync(c => c.Id == preEnrollment.ClassId, cancellationToken);
         if (cls == null)
             return Result<bool>.Fail("Class not found.");
-        if (cls.AvailableSeats <= 0)
-            return Result<bool>.Fail("No available seats remaining.");
 
-        preEnrollment.PaymentStatus = PaymentStatus.Paid;
-        preEnrollment.UpdatedAt = DateTime.UtcNow;
-        preEnrollment.UpdatedBy = studentId;
+        var markPaidResult = preEnrollment.MarkPaid();
+        if (!markPaidResult.IsSuccess)
+            return Result<bool>.Fail(markPaidResult.Error);
 
-        _context.Enrollments.Add(new Enrollment
-        {
-            ClassId = preEnrollment.ClassId,
-            StudentId = studentId,
-            EnrolledAt = DateTime.UtcNow,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = studentId
-        });
+        var decrementResult = cls.DecrementSeat();
+        if (!decrementResult.IsSuccess)
+            return Result<bool>.Fail(decrementResult.Error);
 
-        cls.AvailableSeats--;
-        cls.UpdatedAt = DateTime.UtcNow;
         cls.UpdatedBy = studentId;
+
+        _context.Enrollments.Add(Enrollment.Create(studentId, preEnrollment.ClassId));
 
         if (!string.IsNullOrWhiteSpace(preEnrollment.CouponCode))
         {
             var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.Code == preEnrollment.CouponCode, cancellationToken);
-            if (coupon != null)
-            {
-                coupon.UsageCount++;
-                coupon.UpdatedAt = DateTime.UtcNow;
-            }
+            coupon?.RecordUsage();
         }
 
         await _context.SaveChangesAsync(cancellationToken);
