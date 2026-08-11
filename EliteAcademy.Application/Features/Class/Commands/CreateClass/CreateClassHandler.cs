@@ -26,15 +26,11 @@ public class CreateClassHandler : IRequestHandler<CreateClassCommand, Result<int
     {
         var dto = request.Dto;
 
-        var entity = new ClassEntity
-        {
-            ClassName = dto.ClassName,
-            AvailableSeats = dto.AvailableSeats,
-            Price = dto.Price,
-            InstructorId = _userContextService.UserId,
-            CreatedBy = _userContextService.UserId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var domainResult = ClassEntity.Create(_userContextService.UserId!, dto.ClassName!, dto.AvailableSeats, dto.Price);
+        if (!domainResult.IsSuccess)
+            return Result<int>.Fail(domainResult.Error);
+
+        var entity = domainResult.Value!;
 
         if (request.ImageStream != null && !string.IsNullOrWhiteSpace(request.ImageFileName))
             entity.ClassImage = await _fileStorage.UploadFileAsync(request.ImageStream, request.ImageFileName, "uploads/classes");

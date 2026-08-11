@@ -6,8 +6,12 @@ namespace EliteAcademy.Tests.Domain;
 
 public class QaAnswerCreateTests
 {
-    private static Class InstructorClass(string instructorId = "instructor-1") =>
-        new() { Id = 1, InstructorId = instructorId };
+    private static Class InstructorClass(string instructorId = "instructor-1")
+    {
+        var cls = Class.Create(instructorId, "Test Class", 10, 50).Value!;
+        cls.Id = 1;
+        return cls;
+    }
 
     [Fact]
     public void Create_EmptyText_ReturnsFail()

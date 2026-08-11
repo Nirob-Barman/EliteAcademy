@@ -19,7 +19,8 @@ public class PreEnrollmentCreateTests
     [Fact]
     public void Create_ClassNotApproved_ReturnsFail()
     {
-        var cls = new Class { Id = 1, AvailableSeats = 5 };
+        var cls = Class.Create("instructor-1", "Test Class", 5, 50).Value!;
+        cls.Id = 1;
         cls.Reject("Not eligible");
 
         var result = PreEnrollment.Create("student-1", cls);
@@ -31,8 +32,10 @@ public class PreEnrollmentCreateTests
     [Fact]
     public void Create_NoSeats_ReturnsFail()
     {
-        var cls = new Class { Id = 1, AvailableSeats = 0 };
+        var cls = Class.Create("instructor-1", "Test Class", 1, 50).Value!;
+        cls.Id = 1;
         cls.Approve();
+        cls.DecrementSeat();
 
         var result = PreEnrollment.Create("student-1", cls);
 
@@ -43,7 +46,8 @@ public class PreEnrollmentCreateTests
     [Fact]
     public void Create_ValidClass_ReturnsOk()
     {
-        var cls = new Class { Id = 1, AvailableSeats = 5 };
+        var cls = Class.Create("instructor-1", "Test Class", 5, 50).Value!;
+        cls.Id = 1;
         cls.Approve();
 
         var result = PreEnrollment.Create("student-1", cls);

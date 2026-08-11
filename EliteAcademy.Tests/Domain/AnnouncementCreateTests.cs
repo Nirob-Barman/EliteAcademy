@@ -8,7 +8,8 @@ public class AnnouncementCreateTests
 {
     private static Class ApprovedClass(string instructorId = "instructor-1")
     {
-        var cls = new Class { Id = 1, InstructorId = instructorId };
+        var cls = Class.Create(instructorId, "Test Class", 10, 50).Value!;
+        cls.Id = 1;
         cls.Approve();
         return cls;
     }
@@ -34,7 +35,8 @@ public class AnnouncementCreateTests
     [Fact]
     public void Create_ClassNotApproved_ReturnsFail()
     {
-        var cls = new Class { Id = 1, InstructorId = "instructor-1" };
+        var cls = Class.Create("instructor-1", "Test Class", 10, 50).Value!;
+        cls.Id = 1;
 
         var result = Announcement.Create("instructor-1", cls, "Title", "Body");
 

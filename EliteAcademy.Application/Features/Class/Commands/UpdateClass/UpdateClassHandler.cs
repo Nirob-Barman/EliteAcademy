@@ -35,11 +35,11 @@ public class UpdateClassHandler : IRequestHandler<UpdateClassCommand, Result<boo
         if (entity.InstructorId != _userContextService.UserId)
             return Result<bool>.Fail("You do not own this class.");
 
-        entity.ClassName = dto.ClassName;
-        entity.AvailableSeats = dto.AvailableSeats;
-        entity.Price = dto.Price;
+        var updateResult = entity.UpdateDetails(dto.ClassName!, dto.AvailableSeats, dto.Price);
+        if (!updateResult.IsSuccess)
+            return Result<bool>.Fail(updateResult.Error);
+
         entity.UpdatedBy = _userContextService.UserId;
-        entity.UpdatedAt = DateTime.UtcNow;
 
         if (request.ImageStream != null && !string.IsNullOrWhiteSpace(request.ImageFileName))
         {

@@ -7,15 +7,58 @@ namespace EliteAcademy.Domain.Entities.Instructor
 {
     public class Class : BaseEntity
     {
-        public string? ClassName { get; set; }
+        public string? ClassName { get; private set; }
         public string? ClassImage { get; set; }
-        public string? InstructorId { get; set; }
-        public int AvailableSeats { get; set; }
-        public decimal Price { get; set; }
+        public string? InstructorId { get; private set; }
+        public int AvailableSeats { get; private set; }
+        public decimal Price { get; private set; }
         public ClassStatus Status { get; private set; } = ClassStatus.Pending;
         public string? Feedback { get; private set; }
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
         public ICollection<PreEnrollment> PreEnrollments { get; set; } = new List<PreEnrollment>();
+
+        public static DomainResult<Class> Create(string instructorId, string className, int availableSeats, decimal price)
+        {
+            var validationError = Validate(className, availableSeats, price);
+            if (validationError != null)
+                return DomainResult<Class>.Fail(validationError);
+
+            return DomainResult<Class>.Ok(new Class
+            {
+                ClassName = className.Trim(),
+                AvailableSeats = availableSeats,
+                Price = price,
+                InstructorId = instructorId,
+                CreatedBy = instructorId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        public DomainResult<bool> UpdateDetails(string className, int availableSeats, decimal price)
+        {
+            var validationError = Validate(className, availableSeats, price);
+            if (validationError != null)
+                return DomainResult<bool>.Fail(validationError);
+
+            ClassName = className.Trim();
+            AvailableSeats = availableSeats;
+            Price = price;
+            UpdatedAt = DateTime.UtcNow;
+
+            return DomainResult<bool>.Ok(true);
+        }
+
+        private static string? Validate(string className, int availableSeats, decimal price)
+        {
+            if (string.IsNullOrWhiteSpace(className))
+                return "Class name is required.";
+            if (availableSeats <= 0)
+                return "Available seats must be greater than zero.";
+            if (price < 0)
+                return "Price cannot be negative.";
+
+            return null;
+        }
 
         public DomainResult<bool> Approve()
         {

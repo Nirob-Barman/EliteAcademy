@@ -45,7 +45,8 @@ public class WishlistIntegrationTests : IDisposable
     private void SeedClass(int id, ClassStatus status = ClassStatus.Approved, int seats = 10) =>
         Seed(db =>
         {
-            var cls = new Class { Id = id, ClassName = $"Class {id}", AvailableSeats = seats };
+            var cls = Class.Create("instructor-1", $"Class {id}", seats, 50).Value!;
+            cls.Id = id;
             if (status == ClassStatus.Approved)
                 cls.Approve();
             else if (status == ClassStatus.Rejected)
