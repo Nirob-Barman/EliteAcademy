@@ -31,8 +31,7 @@ public class GetMyNotificationPreferencesHandler
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
-        if (pref == null)
-            pref = new NotificationPreferenceEntity { UserId = userId };
+        pref ??= NotificationPreferenceEntity.Create(userId);
 
         return Result<NotificationPreferenceDto>.Ok(new NotificationPreferenceDto
         {

@@ -31,7 +31,7 @@ public class UpdateNotificationPreferencesHandler
 
         if (pref == null)
         {
-            pref = new NotificationPreferenceEntity { UserId = userId };
+            pref = NotificationPreferenceEntity.Create(userId);
             _context.NotificationPreferences.Add(pref);
         }
 

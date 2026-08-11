@@ -3,7 +3,7 @@ namespace EliteAcademy.Domain.Entities
     public class NotificationPreference
     {
         public int Id { get; set; }
-        public string UserId { get; set; } = string.Empty;
+        public string UserId { get; private set; } = string.Empty;
 
         // Email notifications
         public bool EmailOnEnrollment        { get; set; } = true;
@@ -15,6 +15,8 @@ namespace EliteAcademy.Domain.Entities
         // In-app notifications
         public bool InAppOnEnrollment   { get; set; } = true;
         public bool InAppOnAnnouncement { get; set; } = true;
+
+        public static NotificationPreference Create(string userId) => new() { UserId = userId };
 
         public void UpdatePreferences(
             bool emailOnEnrollment, bool emailOnAnnouncement, bool emailOnClassStatus,
