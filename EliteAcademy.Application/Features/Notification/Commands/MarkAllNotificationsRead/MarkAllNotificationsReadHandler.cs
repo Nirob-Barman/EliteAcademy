@@ -24,10 +24,9 @@ public class MarkAllNotificationsReadHandler : IRequestHandler<MarkAllNotificati
             .Where(n => n.UserId == userId && !n.IsRead)
             .ToListAsync(cancellationToken);
 
-        foreach (var n in unread)
+        foreach (var notification in unread)
         {
-            n.IsRead = true;
-            n.UpdatedAt = DateTime.UtcNow;
+            notification.MarkAsRead();
         }
 
         if (unread.Any())

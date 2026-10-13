@@ -15,15 +15,12 @@ public class CreateNotificationHandler : IRequestHandler<CreateNotificationComma
 
     public async Task<Unit> Handle(CreateNotificationCommand request, CancellationToken cancellationToken)
     {
-        _context.AppNotifications.Add(new AppNotification
-        {
-            UserId = request.UserId,
-            Title = request.Title,
-            Message = request.Message,
-            Link = request.Link,
-            IsRead = false,
-            CreatedAt = DateTime.UtcNow
-        });
+        var notification = AppNotification.Create(
+            request.UserId,
+            request.Title,
+            request.Message,
+            request.Link);
+        _context.AppNotifications.Add(notification);
         await _context.SaveChangesAsync(cancellationToken);
 
         return Unit.Value;

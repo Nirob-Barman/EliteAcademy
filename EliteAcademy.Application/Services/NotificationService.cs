@@ -23,15 +23,13 @@ namespace EliteAcademy.Application.Services
 
         public async Task CreateAsync(string userId, string title, string message, string? link = null)
         {
-            _context.AppNotifications.Add(new AppNotification
-            {
-                UserId = userId,
-                Title = title,
-                Message = message,
-                Link = link,
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow
-            });
+            var notification = AppNotification.Create(
+                userId,
+                title,
+                message,
+                link);
+
+            _context.AppNotifications.Add(notification);
             await _context.SaveChangesAsync();
         }
 
@@ -70,10 +68,9 @@ namespace EliteAcademy.Application.Services
             var userId = _userContextService.UserId!;
             var unread = await _context.AppNotifications.Where(n => n.UserId == userId && !n.IsRead).ToListAsync();
 
-            foreach (var n in unread)
+            foreach (var notification in unread)
             {
-                n.IsRead = true;
-                n.UpdatedAt = DateTime.UtcNow;
+                notification.MarkAsRead();
             }
 
             if (unread.Any())
