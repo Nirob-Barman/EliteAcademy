@@ -27,7 +27,7 @@ public class ApproveClassHandler : IRequestHandler<ApproveClassCommand, Result<b
         if (!approveResult.IsSuccess)
             return Result<bool>.Fail(approveResult.Error);
 
-        entity.UpdatedBy = _userContextService.UserId;
+        entity.SetUpdatedBy(_userContextService.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
         return Result<bool>.Ok(true, "Class approved.");

@@ -1,4 +1,5 @@
 using EliteAcademy.Application.Common.Interfaces;
+using EliteAcademy.Application.Interfaces;
 using EliteAcademy.Application.Wrappers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -8,10 +9,12 @@ namespace EliteAcademy.Application.Features.PaymentGateway.Commands.TogglePaymen
 public class TogglePaymentGatewayHandler : IRequestHandler<TogglePaymentGatewayCommand, Result<bool>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUserContextService _userContextService;
 
-    public TogglePaymentGatewayHandler(IApplicationDbContext context)
+    public TogglePaymentGatewayHandler(IApplicationDbContext context, IUserContextService userContextService)
     {
         _context = context;
+        _userContextService = userContextService;
     }
 
     public async Task<Result<bool>> Handle(TogglePaymentGatewayCommand request, CancellationToken cancellationToken)
@@ -21,8 +24,8 @@ public class TogglePaymentGatewayHandler : IRequestHandler<TogglePaymentGatewayC
         if (entity == null)
             return Result<bool>.Fail("Gateway not found.");
 
-        entity.IsActive = !entity.IsActive;
-        entity.UpdatedAt = DateTime.UtcNow;
+        entity.ToggleStatus();
+        entity.SetUpdatedBy(_userContextService.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
 

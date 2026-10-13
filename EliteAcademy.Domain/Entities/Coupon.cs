@@ -10,7 +10,7 @@ namespace EliteAcademy.Domain.Entities
         public int MaxUsages { get; private set; }
         public int UsageCount { get; set; }
         public DateTime ExpiresAt { get; private set; }
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; private set; } = true;
 
         public static DomainResult<Coupon> Create(string code, decimal discountPercent, int maxUsages, DateTime expiresAt, bool isActive)
         {
@@ -77,6 +77,11 @@ namespace EliteAcademy.Domain.Entities
         {
             UsageCount++;
             UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void ToggleStatus()
+        {
+            IsActive = !IsActive;
         }
     }
 }

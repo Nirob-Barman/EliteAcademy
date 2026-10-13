@@ -12,6 +12,11 @@ namespace EliteAcademy.Domain.Entities
 
         public ICollection<PaymentTransaction> Transactions { get; set; } = new List<PaymentTransaction>();
 
+        public void ToggleStatus()
+        {
+            IsActive = !IsActive;
+        }
+
         public void MarkDeleted() => AddDomainEvent(new PaymentGatewayDeletedEvent(Name, Id));
     }
 }

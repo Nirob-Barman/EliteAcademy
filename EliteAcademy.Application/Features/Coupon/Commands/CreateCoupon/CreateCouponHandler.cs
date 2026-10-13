@@ -37,7 +37,7 @@ public class CreateCouponHandler : IRequestHandler<CreateCouponCommand, Result<b
             return Result<bool>.Fail(domainResult.Error);
 
         var entity = domainResult.Value!;
-        entity.CreatedBy = _userContextService.UserId;
+        entity.SetCreatedBy(_userContextService.UserId);
         _context.Coupons.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 

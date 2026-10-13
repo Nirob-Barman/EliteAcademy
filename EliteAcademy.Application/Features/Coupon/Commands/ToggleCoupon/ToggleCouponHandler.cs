@@ -30,9 +30,8 @@ public class ToggleCouponHandler : IRequestHandler<ToggleCouponCommand, Result<b
         if (entity == null)
             return Result<bool>.Fail("Coupon not found.");
 
-        entity.IsActive = !entity.IsActive;
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.UpdatedBy = _userContextService.UserId;
+        entity.ToggleStatus();
+        entity.SetUpdatedBy(_userContextService.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
 

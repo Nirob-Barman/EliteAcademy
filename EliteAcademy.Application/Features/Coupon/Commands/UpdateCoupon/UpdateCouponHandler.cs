@@ -40,7 +40,7 @@ public class UpdateCouponHandler : IRequestHandler<UpdateCouponCommand, Result<b
         if (!updateResult.IsSuccess)
             return Result<bool>.Fail(updateResult.Error);
 
-        entity.UpdatedBy = _userContextService.UserId;
+        entity.SetUpdatedBy(_userContextService.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
 

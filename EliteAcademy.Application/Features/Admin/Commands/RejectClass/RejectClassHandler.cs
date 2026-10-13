@@ -27,7 +27,7 @@ public class RejectClassHandler : IRequestHandler<RejectClassCommand, Result<boo
         if (!rejectResult.IsSuccess)
             return Result<bool>.Fail(rejectResult.Error);
 
-        entity.UpdatedBy = _userContextService.UserId;
+        entity.SetUpdatedBy(_userContextService.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
         return Result<bool>.Ok(true, "Class rejected.");

@@ -39,7 +39,7 @@ public class UpdateClassHandler : IRequestHandler<UpdateClassCommand, Result<boo
         if (!updateResult.IsSuccess)
             return Result<bool>.Fail(updateResult.Error);
 
-        entity.UpdatedBy = _userContextService.UserId;
+        entity.SetUpdatedBy(_userContextService.UserId);
 
         if (request.ImageStream != null && !string.IsNullOrWhiteSpace(request.ImageFileName))
         {

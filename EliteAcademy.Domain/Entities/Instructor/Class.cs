@@ -67,7 +67,7 @@ namespace EliteAcademy.Domain.Entities.Instructor
 
             Status = ClassStatus.Approved;
             Feedback = null;
-            UpdatedAt = DateTime.UtcNow;
+            //UpdatedAt = DateTime.UtcNow;
 
             if (!string.IsNullOrWhiteSpace(InstructorId))
                 AddDomainEvent(new ClassApprovedEvent(Id, InstructorId, ClassName!));
