@@ -24,17 +24,16 @@ namespace EliteAcademy.Application.Services
         public async Task LogAsync(string entityName, string action, string? details = null,
             string? oldValues = null, string? newValues = null)
         {
-            _context.AuditLogs.Add(new AuditLog
-            {
-                EntityName = entityName,
-                Action = action,
-                UserId = _userContextService.UserId,
-                UserName = _userContextService.Email,
-                Details = details,
-                OldValues = oldValues,
-                NewValues = newValues,
-                CreatedAt = DateTime.UtcNow
-            });
+            var auditLog = AuditLog.Create(
+                entityName: entityName,
+                action: action,
+                userId: _userContextService.UserId,
+                userName: _userContextService.Email,
+                details: details,
+                oldValues: oldValues,
+                newValues: newValues);
+
+            _context.AuditLogs.Add(auditLog);
             await _context.SaveChangesAsync();
         }
 
