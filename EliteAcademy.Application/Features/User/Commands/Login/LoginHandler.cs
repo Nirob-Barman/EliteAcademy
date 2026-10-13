@@ -52,16 +52,15 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<string>>
 
     private async Task RecordLoginAuditAsync(string? userId, bool success, string? errorMessage)
     {
-        _context.LoginAudits.Add(new LoginAudit
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            LoginTime = DateTime.UtcNow,
-            IPAddress = _userContextService.IpAddress,
-            UserAgent = _userContextService.UserAgent,
-            IsSuccessful = success,
-            ErrorMessage = errorMessage
-        });
+        var audit = LoginAudit.Create(
+            userId: userId,
+            ipAddress: _userContextService.IpAddress,
+            userAgent: _userContextService.UserAgent,
+            isSuccessful: success,
+            errorMessage: errorMessage);
+
+        _context.LoginAudits.Add(audit);
+
         await _context.SaveChangesAsync();
     }
 }
