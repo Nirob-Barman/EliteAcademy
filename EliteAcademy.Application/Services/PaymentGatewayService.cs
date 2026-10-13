@@ -94,15 +94,13 @@ namespace EliteAcademy.Application.Services
                 return Result<bool>.Fail("A gateway with this slug already exists.");
 
             var configJson = string.IsNullOrWhiteSpace(dto.Config) ? "{}" : dto.Config;
-            var entity = new PaymentGateway
-            {
-                Slug = slugLower,
-                Name = dto.Name.Trim(),
-                Config = _encryptor.Encrypt(configJson),
-                IsActive = dto.IsActive,
-                IsSandbox = dto.IsSandbox,
-                CreatedAt = DateTime.UtcNow
-            };
+            
+            var entity = PaymentGateway.Create(
+                slug: slugLower,
+                name: dto.Name.Trim(),
+                config: _encryptor.Encrypt(configJson),
+                isActive: dto.IsActive,
+                isSandbox: dto.IsSandbox);
 
             _context.PaymentGateways.Add(entity);
             await _context.SaveChangesAsync();
@@ -145,12 +143,12 @@ namespace EliteAcademy.Application.Services
                 mergedJson = string.IsNullOrWhiteSpace(dto.Config) ? "{}" : dto.Config;
             }
 
-            entity.Slug = slugLower;
-            entity.Name = dto.Name.Trim();
-            entity.Config = _encryptor.Encrypt(mergedJson);
-            entity.IsActive = dto.IsActive;
-            entity.IsSandbox = dto.IsSandbox;
-            entity.UpdatedAt = DateTime.UtcNow;
+            entity.UpdateDetails(
+                slug: slugLower,
+                name: dto.Name.Trim(),
+                encryptedConfig: _encryptor.Encrypt(mergedJson),
+                isActive: dto.IsActive,
+                isSandbox: dto.IsSandbox);
 
             await _context.SaveChangesAsync();
 
@@ -166,8 +164,8 @@ namespace EliteAcademy.Application.Services
             if (entity == null)
                 return Result<bool>.Fail("Gateway not found.");
 
-            entity.IsActive = !entity.IsActive;
-            entity.UpdatedAt = DateTime.UtcNow;
+            entity.ToggleStatus();
+            entity.SetUpdatedBy(null);
 
             await _context.SaveChangesAsync();
 

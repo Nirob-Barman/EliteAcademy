@@ -58,12 +58,12 @@ public class UpdatePaymentGatewayHandler : IRequestHandler<UpdatePaymentGatewayC
             mergedJson = string.IsNullOrWhiteSpace(dto.Config) ? "{}" : dto.Config;
         }
 
-        entity.Slug = slugLower;
-        entity.Name = dto.Name.Trim();
-        entity.Config = _encryptor.Encrypt(mergedJson);
-        entity.IsActive = dto.IsActive;
-        entity.IsSandbox = dto.IsSandbox;
-        entity.UpdatedAt = DateTime.UtcNow;
+        entity.UpdateDetails(
+            slug: slugLower,
+            name: dto.Name,
+            encryptedConfig: _encryptor.Encrypt(mergedJson),
+            isActive: dto.IsActive,
+            isSandbox: dto.IsSandbox);
 
         await _context.SaveChangesAsync(cancellationToken);
 

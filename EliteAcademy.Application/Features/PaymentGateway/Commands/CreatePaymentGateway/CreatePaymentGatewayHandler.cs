@@ -33,15 +33,14 @@ public class CreatePaymentGatewayHandler : IRequestHandler<CreatePaymentGatewayC
             return Result<bool>.Fail("A gateway with this slug already exists.");
 
         var configJson = string.IsNullOrWhiteSpace(dto.Config) ? "{}" : dto.Config;
-        var entity = new PaymentGatewayEntity
-        {
-            Slug = slugLower,
-            Name = dto.Name.Trim(),
-            Config = _encryptor.Encrypt(configJson),
-            IsActive = dto.IsActive,
-            IsSandbox = dto.IsSandbox,
-            CreatedAt = DateTime.UtcNow
-        };
+
+        var encryptedConfig = _encryptor.Encrypt(configJson);
+        var entity = PaymentGatewayEntity.Create(
+            slug: slugLower,
+            name: dto.Name,
+            config: encryptedConfig,
+            isActive: dto.IsActive,
+            isSandbox: dto.IsSandbox);
 
         _context.PaymentGateways.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
