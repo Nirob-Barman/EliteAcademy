@@ -8,7 +8,7 @@ namespace EliteAcademy.Domain.Entities
         public string Code { get; private set; } = string.Empty;
         public decimal DiscountPercent { get; private set; }   // 1–100
         public int MaxUsages { get; private set; }
-        public int UsageCount { get; set; }
+        public int UsageCount { get; private set; }
         public DateTime ExpiresAt { get; private set; }
         public bool IsActive { get; private set; } = true;
 

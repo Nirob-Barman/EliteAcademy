@@ -9,8 +9,9 @@ namespace EliteAcademy.Domain.Entities
         public string Config { get; private set; } = string.Empty;   // encrypted JSON
         public bool IsActive { get; private set; } = true;
         public bool IsSandbox { get; private set; } = true;
-
-        public ICollection<PaymentTransaction> Transactions { get; set; } = new List<PaymentTransaction>();
+        
+        private readonly List<PaymentTransaction> _transactions = new();
+        public IReadOnlyCollection<PaymentTransaction> Transactions => _transactions.AsReadOnly();
 
         private PaymentGateway() { } // EF Core
 

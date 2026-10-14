@@ -6,11 +6,11 @@ namespace EliteAcademy.Domain.Entities
         public string UserId { get; private set; } = string.Empty;
 
         // Email notifications
-        public bool EmailOnEnrollment        { get; set; } = true;
-        public bool EmailOnAnnouncement      { get; set; } = true;
-        public bool EmailOnClassStatus       { get; set; } = true;
-        public bool EmailOnApplicationStatus { get; set; } = true;
-        public bool EmailOnPasswordChange    { get; set; } = true;
+        public bool EmailOnEnrollment { get; private set; } = true;
+        public bool EmailOnAnnouncement { get; private set; } = true;
+        public bool EmailOnClassStatus { get; private set; } = true;
+        public bool EmailOnApplicationStatus { get; private set; } = true;
+        public bool EmailOnPasswordChange { get; private set; } = true;
 
         // In-app notifications
         public bool InAppOnEnrollment   { get; set; } = true;

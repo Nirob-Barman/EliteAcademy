@@ -14,8 +14,12 @@ namespace EliteAcademy.Domain.Entities.Instructor
         public decimal Price { get; private set; }
         public ClassStatus Status { get; private set; } = ClassStatus.Pending;
         public string? Feedback { get; private set; }
-        public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
-        public ICollection<PreEnrollment> PreEnrollments { get; set; } = new List<PreEnrollment>();
+
+        private readonly List<Enrollment> _enrollments = new();
+        public IReadOnlyCollection<Enrollment> Enrollments => _enrollments.AsReadOnly();
+
+        private readonly List<PreEnrollment> _preEnrollments = new();
+        public IReadOnlyCollection<PreEnrollment> PreEnrollments => _preEnrollments.AsReadOnly();
 
         public static DomainResult<Class> Create(string instructorId, string className, int availableSeats, decimal price)
         {

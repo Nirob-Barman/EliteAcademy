@@ -64,14 +64,20 @@ public class InitiatePaymentHandler : IRequestHandler<InitiatePaymentCommand, Re
         await _context.BeginTransactionAsync(cancellationToken);
         try
         {
-            var tx = new PaymentTransaction
+            var txResult = PaymentTransaction.Create(
+                request.PreEnrollmentId,
+                gateway.Id,
+                amount,
+                studentId);
+
+            if (!txResult.IsSuccess)
             {
-                PreEnrollmentId = request.PreEnrollmentId,
-                GatewayId = gateway.Id,
-                Amount = amount,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = studentId
-            };
+                await _context.RollbackTransactionAsync(cancellationToken);
+                return Result<string>.Fail(txResult.Error ?? "Invalid payment transaction.");
+            }
+
+            var tx = txResult.Value!;
+
             _context.PaymentTransactions.Add(tx);
             await _context.SaveChangesAsync(cancellationToken);
 
